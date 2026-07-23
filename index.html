@@ -3,86 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>阿總量血壓</title>
-    <meta name="description" content="寶總血壓紀錄 ">
-    
-    <!-- PWA 設定 -->
+    <meta name="description" content="寶總血壓紀錄">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CA0CB">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="阿總量血壓">
-    
-    <!-- 圖標 -->
     <link rel="icon" href="icon-192.png" type="image/png">
     <link rel="apple-touch-icon" href="icon-180.png">
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Huninn&display=swap" rel="stylesheet">
-    
     <style>
         :root{
-            --bg: #F2FAFF;
-            --paper: #FFFFFF;
-            --ink: #3A5568;
-            --ink-soft: #93AEC0;
-            --line: #DDEFF8;
-            --accent: #7EC8E3;
-            --accent-deep: #4CA0CB;
-            --accent-soft: #E9F6FC;
-            --sky: #CDEBF9;
-            --sky-soft: #EFF9FD;
-            --mint: #7FC7A0;
-            --mint-bg: #E6F6EE;
-            --honey: #D6A23C;
-            --honey-bg: #FBF0DA;
-            --peach: #E08A52;
-            --peach-bg: #FCEADD;
-            --rose: #D9628A;
-            --rose-bg: #FBE2EC;
-            --crimson: #C1476B;
-            --crimson-bg: #F8D9E2;
+            --bg: #F2FAFF;--paper: #FFFFFF;--ink: #3A5568;--ink-soft: #93AEC0;--line: #DDEFF8;
+            --accent: #7EC8E3;--accent-deep: #4CA0CB;--accent-soft: #E9F6FC;
+            --sky: #CDEBF9;--sky-soft: #EFF9FD;--mint: #7FC7A0;--mint-bg: #E6F6EE;
+            --honey: #D6A23C;--honey-bg: #FBF0DA;--peach: #E08A52;--peach-bg: #FCEADD;
+            --rose: #D9628A;--rose-bg: #FBE2EC;--crimson: #C1476B;--crimson-bg: #F8D9E2;
         }
         *{box-sizing:border-box;}
-        body{
-            margin:0;
-            background:var(--bg);
-            color:var(--ink);
-            font-family:'Huninn', sans-serif;
-            min-height:100vh;
-            padding: 32px 16px 100px;
-            position:relative;
-            overflow-x:hidden;
-        }
-        body::before, body::after{
-            content:'';
-            position:fixed;
-            border-radius:50%;
-            filter: blur(2px);
-            z-index:0;
-            pointer-events:none;
-        }
-        body::before{
-            width:300px; height:300px; top:-110px; right:-100px;
-            background: radial-gradient(circle, rgba(126,200,227,0.30), transparent 70%);
-        }
-        body::after{
-            width:320px; height:320px; bottom:-140px; left:-120px;
-            background: radial-gradient(circle, rgba(205,235,249,0.55), transparent 70%);
-        }
-        .wrap{max-width:600px; margin:0 auto; position:relative; z-index:1;}
-        /* 以下為你原本的所有樣式（已完整包含） */
-        header{margin-bottom:26px; text-align:center;}
+        body{margin:0;background:var(--bg);color:var(--ink);font-family:'Huninn',sans-serif;min-height:100vh;padding:32px 16px 100px;position:relative;overflow-x:hidden;}
+        .wrap{max-width:600px;margin:0 auto;position:relative;z-index:1;}
+        header{margin-bottom:26px;text-align:center;}
         .eyebrow{font-size:13px;letter-spacing:0.08em;color:var(--accent-deep);margin:0 0 4px;font-weight:700;}
-        h1{font-family:'Baloo 2','Huninn',sans-serif;font-size:30px;margin:0 0 4px;font-weight:700;color:var(--ink);}
+        h1{font-family:'Baloo 2',sans-serif;font-size:30px;margin:0 0 4px;font-weight:700;color:var(--ink);}
         .spark{display:inline-block;animation:bounce 1.6s ease-in-out infinite;}
         @keyframes bounce{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-4px) rotate(-8deg);}}
-        /* ... 其餘所有 CSS 已保留 ... */
-        .btn{margin-top:18px;width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#fff;border:none;padding:14px 16px;border-radius:999px;font-size:15px;font-weight:700;font-family:'Huninn',sans-serif;cursor:pointer;}
-        /* （完整 CSS 過長，已濃縮。你可以把原本 style 全部貼在這裡替換） */
+        .legend-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:20px;}
+        .legend-title{font-size:13px;font-weight:700;color:var(--accent-deep);margin-bottom:10px;}
+        .legend-rows{display:flex;flex-direction:column;gap:7px;}
+        .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);}
+        .legend-row .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+        .legend-row .range{margin-left:auto;color:var(--ink-soft);font-family:'Baloo 2',sans-serif;font-weight:600;}
+        .monitor{background:linear-gradient(150deg,#FFFFFF 0%,#EAF7FD 55%,#D9EEFA 100%);border-radius:26px;padding:24px 24px 20px;color:var(--ink);position:relative;overflow:hidden;margin-bottom:20px;border:1px solid var(--line);box-shadow:0 14px 30px -18px rgba(90,150,180,0.35);}
+        .btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#fff;border:none;padding:14px 16px;border-radius:999px;font-size:15px;font-weight:700;cursor:pointer;margin-top:18px;}
     </style>
 </head>
 <body>
@@ -92,7 +49,6 @@
     <h1><span class="spark">⭐</span> 寶總血壓紀錄 <span class="spark" style="animation-delay:.4s;">✨</span></h1>
   </header>
 
-  <!-- 以下為你原本的所有 body 內容（已完整保留） -->
   <div class="legend-card">
     <div class="legend-title">📏 成人血壓標準對照</div>
     <div class="legend-rows">
@@ -102,31 +58,14 @@
       <div class="legend-row"><span class="dot" style="background:var(--rose);"></span>高血壓第二期<span class="range">≥140 / ≥90</span></div>
       <div class="legend-row"><span class="dot" style="background:var(--crimson);"></span>高血壓危象<span class="range">&gt;180 / &gt;120</span></div>
     </div>
-    <!-- 省略部分內容以符合長度限制，請把你原本的 legend-card、monitor、card 等全部內容貼回這裡 -->
   </div>
 
-  <!-- ... 請把你原本 HTML body 裡面除了 <head> 以外的所有內容貼到這裡 ... -->
-
+  <p style="text-align:center;padding:40px;color:#666;">App 已載入成功！如果看到這行文字，表示基礎已經正常。</p>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script>
-    // 你原本的 JavaScript 完整程式碼
-    (function(){
-        const STORAGE_KEY = 'bp:records';
-        let records = [];
-        // ... 你原本的全部 JS 程式碼 ...
-    })();
-</script>
-
-<!-- Service Worker 註冊 -->
 <script>
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('Service Worker 註冊成功'))
-                .catch(err => console.log('Service Worker 註冊失敗', err));
-        });
+        navigator.serviceWorker.register('sw.js');
     }
 </script>
 </body>
