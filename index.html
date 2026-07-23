@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>血壓小日記</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4CA0CB">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="血壓小日記">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Huninn&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -422,6 +430,66 @@
     transform:none;
     box-shadow: 0 10px 20px -14px rgba(58,85,104,0.30);
   }
+  /* 加到主畫面提示橫幅 */
+  .install-banner{
+    position:fixed;
+    left:50%;
+    bottom:-160px;
+    transform:translateX(-50%);
+    width:calc(100% - 32px);
+    max-width:560px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    box-shadow: 0 20px 40px -18px rgba(58,85,104,0.45);
+    z-index:80;
+    opacity:0;
+    transition: bottom .35s ease, opacity .35s ease;
+  }
+  .install-banner.show{
+    bottom:18px;
+    opacity:1;
+  }
+  .install-banner-icon{
+    font-size:26px; flex-shrink:0;
+    background:var(--accent-soft);
+    width:44px; height:44px;
+    border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .install-banner-text{ flex:1; min-width:0; }
+  .install-banner-title{ font-size:13.5px; font-weight:700; color:var(--ink); }
+  .install-banner-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; line-height:1.4; }
+  .install-banner-btn{
+    font-family:'Huninn', sans-serif;
+    font-size:12.5px; font-weight:700;
+    border:none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color:#fff;
+    padding:9px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .install-banner-close{
+    background:var(--accent-soft); border:none; color:var(--accent-deep); cursor:pointer;
+    width:26px; height:26px; border-radius:50%; font-size:13px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .install-banner-close:hover{ background:var(--rose-bg); color:var(--crimson); }
+  @media (max-width:420px){
+    .install-banner{ flex-wrap:wrap; }
+    .install-banner-text{ order:1; width:100%; }
+    .install-banner-icon{ order:0; }
+    .install-banner-btn{ order:2; }
+    .install-banner-close{ order:3; }
+  }
+
   .modal-overlay{
     display:none;
     position:fixed; inset:0;
@@ -479,7 +547,7 @@
     </div>
     <button class="auth-btn" id="authBtn">連接 Google</button>
   </div>
-  <p class="auth-note" id="authNote">連接後，新增的紀錄會自動同步備份到你的 Google 試算表（刪除紀錄僅會從本機畫面移除）。</p>
+  <p class="auth-note" id="authNote">連接後，新增與刪除紀錄都會自動同步到你的 Google 試算表，且每次開啟頁面會自動嘗試重新連線。</p>
 
   <button class="btn standard-trigger-btn" id="openStandardBtn">📏 血壓 / 心跳標準對照</button>
 
@@ -545,6 +613,16 @@
 
 </div>
 
+<div class="install-banner" id="installBanner">
+  <div class="install-banner-icon">📲</div>
+  <div class="install-banner-text">
+    <div class="install-banner-title" id="installTitle">加到主畫面</div>
+    <div class="install-banner-sub" id="installSub">下次可以像 App 一樣直接從桌面打開唷</div>
+  </div>
+  <button class="install-banner-btn" id="installActionBtn">加入主畫面</button>
+  <button class="install-banner-close" id="installCloseBtn" title="關閉">✕</button>
+</div>
+
 <div class="modal-overlay" id="standardOverlay">
   <div class="modal-card">
     <div class="modal-header">
@@ -604,10 +682,13 @@
   const GOOGLE_CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
   const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
   const SHEET_FILE_NAME = '寶總血壓紀錄表';
+  const SYNC_STATE_KEY = 'bp:syncState';
   let tokenClient = null;
   let accessToken = null;
   let spreadsheetId = null;
   let sheetName = 'Sheet1';
+  let sheetGid = 0;
+  let isSilentAttempt = false;
 
   const $ = id => document.getElementById(id);
   const dateInput = $('dateInput'), timeInput = $('timeInput'),
@@ -668,6 +749,17 @@
     authBtn.classList.toggle('connected', connected);
   }
 
+  async function saveSyncState(){
+    try{ await window.storage.set(SYNC_STATE_KEY, JSON.stringify({ spreadsheetId, sheetName, sheetGid }), false); }
+    catch(e){ /* 忽略儲存失敗，不影響本次連線 */ }
+  }
+  async function loadSyncState(){
+    try{
+      const r = await window.storage.get(SYNC_STATE_KEY, false);
+      return r ? JSON.parse(r.value) : null;
+    }catch(e){ return null; }
+  }
+
   function initGoogleAuthClient(){
     if(typeof google === 'undefined' || !google.accounts){
       // Google 腳本尚未載入完成，稍後重試
@@ -679,14 +771,26 @@
       scope: GOOGLE_SCOPES,
       callback: async (response)=>{
         if(response.error){
-          setAuthUI(false, '授權失敗，請再試一次');
+          if(isSilentAttempt){ setAuthUI(false, '尚未連接雲端 ☁️'); }
+          else{ setAuthUI(false, '授權失敗，請再試一次'); }
+          isSilentAttempt = false;
           return;
         }
+        isSilentAttempt = false;
         accessToken = response.access_token;
         setAuthUI(true, '連線中，正在同步試算表…');
         await initSheetAndLoadData();
       }
     });
+    tryAutoReconnect();
+  }
+
+  async function tryAutoReconnect(){
+    const state = await loadSyncState();
+    if(!state || !state.spreadsheetId) return;
+    isSilentAttempt = true;
+    setAuthUI(false, '嘗試自動連線中…');
+    tokenClient.requestAccessToken({ prompt: '' });
   }
 
   function handleAuth(){
@@ -694,7 +798,25 @@
       setAuthUI(false, 'Google 服務尚未就緒，請稍候再試');
       return;
     }
+    isSilentAttempt = false;
     tokenClient.requestAccessToken({ prompt: '' });
+  }
+
+  async function ensureIdColumn(){
+    try{
+      const encodedSheetName = encodeURIComponent(sheetName);
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!F1`, {
+        headers:{ Authorization:`Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      if(!data.values || !data.values[0] || !data.values[0][0]){
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!F1?valueInputOption=USER_ENTERED`, {
+          method:'PUT',
+          headers:{ Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json' },
+          body: JSON.stringify({ values:[['編號']] })
+        });
+      }
+    }catch(e){ console.error('檢查編號欄位失敗', e); }
   }
 
   async function initSheetAndLoadData(){
@@ -713,7 +835,9 @@
         const meta = await metaRes.json();
         if(meta.sheets && meta.sheets.length > 0){
           sheetName = meta.sheets[0].properties.title;
+          sheetGid = meta.sheets[0].properties.sheetId;
         }
+        await ensureIdColumn();
       } else {
         const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
           method:'POST',
@@ -730,7 +854,8 @@
                     { userEnteredValue:{ stringValue:'時間' } },
                     { userEnteredValue:{ stringValue:'收縮壓' } },
                     { userEnteredValue:{ stringValue:'舒張壓' } },
-                    { userEnteredValue:{ stringValue:'心跳' } }
+                    { userEnteredValue:{ stringValue:'心跳' } },
+                    { userEnteredValue:{ stringValue:'編號' } }
                   ]
                 }]
               }]
@@ -740,19 +865,21 @@
         const newSheet = await createRes.json();
         spreadsheetId = newSheet.spreadsheetId;
         sheetName = 'Sheet1';
+        sheetGid = (newSheet.sheets && newSheet.sheets[0]) ? newSheet.sheets[0].properties.sheetId : 0;
       }
 
       await loadDataFromSheet();
+      await saveSyncState();
     }catch(err){
       console.error('雲端試算表初始化失敗', err);
       setAuthUI(true, '雲端初始化失敗，請重新連接');
     }
   }
 
-  async function loadDataFromSheet(){
+  async function loadDataFromSheet(silent){
     try{
       const encodedSheetName = encodeURIComponent(sheetName);
-      const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A2:E1000`;
+      const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A2:F1000`;
       const res = await fetch(readUrl, { headers:{ Authorization:`Bearer ${accessToken}` } });
       const data = await res.json();
 
@@ -760,7 +887,7 @@
         records = data.values
           .filter(row => row[0] && row[1] && row[2] && row[3] && row[4])
           .map((row, i) => ({
-            id: `sheet-${i}-${row[0]}-${row[1]}`,
+            id: row[5] || `sheet-${i}-${row[0]}-${row[1]}`,
             date: row[0], time: row[1],
             sys: Number(row[2]), dia: Number(row[3]), pulse: Number(row[4])
           }));
@@ -769,10 +896,10 @@
       }
       renderAll();
       await saveRecords();
-      setAuthUI(true, '✅ 已連接你的 Google 試算表');
+      if(!silent) setAuthUI(true, '✅ 已連接你的 Google 試算表');
     }catch(err){
       console.error('讀取雲端試算表失敗', err);
-      setAuthUI(true, '讀取雲端資料失敗');
+      if(!silent) setAuthUI(true, '讀取雲端資料失敗');
     }
   }
 
@@ -780,11 +907,11 @@
     if(!accessToken || !spreadsheetId) return;
     try{
       const encodedSheetName = encodeURIComponent(sheetName);
-      const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A:E:append?valueInputOption=USER_ENTERED`;
+      const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A:F:append?valueInputOption=USER_ENTERED`;
       const res = await fetch(appendUrl, {
         method:'POST',
         headers:{ Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json' },
-        body: JSON.stringify({ values:[[record.date, record.time, record.sys, record.dia, record.pulse]] })
+        body: JSON.stringify({ values:[[record.date, record.time, record.sys, record.dia, record.pulse, record.id]] })
       });
       if(!res.ok){
         const resData = await res.json();
@@ -797,8 +924,56 @@
     }
   }
 
+  async function deleteFromSheet(record){
+    if(!accessToken || !spreadsheetId) return;
+    try{
+      const encodedSheetName = encodeURIComponent(sheetName);
+      const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A2:F1000`;
+      const res = await fetch(readUrl, { headers:{ Authorization:`Bearer ${accessToken}` } });
+      const data = await res.json();
+      const rows = data.values || [];
+      let idx = rows.findIndex(r => r[5] && r[5] === record.id);
+      if(idx === -1){
+        idx = rows.findIndex(r =>
+          r[0] === record.date && r[1] === record.time &&
+          String(r[2]) === String(record.sys) && String(r[3]) === String(record.dia) && String(r[4]) === String(record.pulse)
+        );
+      }
+      if(idx === -1) return; // 這筆資料還沒同步到雲端，或已被移除
+
+      const delRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+        method:'POST',
+        headers:{ Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          requests:[{
+            deleteDimension:{
+              range:{ sheetId: sheetGid, dimension:'ROWS', startIndex: idx + 1, endIndex: idx + 2 }
+            }
+          }]
+        })
+      });
+      if(!delRes.ok){
+        const errData = await delRes.json();
+        console.error('刪除雲端資料列失敗', errData);
+      }
+    }catch(err){
+      console.error('刪除雲端資料發生錯誤', err);
+    }
+  }
+
   authBtn.addEventListener('click', handleAuth);
   window.addEventListener('load', initGoogleAuthClient);
+
+  // 分頁重新變為可見時，以及每 60 秒，自動向試算表拉取最新資料
+  // （這樣若在 Google 試算表上直接編輯/刪除，本機畫面也會跟著更新）
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible' && accessToken && spreadsheetId){
+      loadDataFromSheet(true);
+    }
+  });
+  setInterval(()=>{
+    if(accessToken && spreadsheetId){ loadDataFromSheet(true); }
+  }, 60000);
 
   function classify(sys, dia){
     if(sys >= 180 || dia >= 120) return {label:'高血壓危象', key:'crisis'};
@@ -1094,9 +1269,11 @@
   }
 
   async function deleteRecord(id){
+    const target = records.find(r => r.id === id);
     records = records.filter(r => r.id !== id);
     renderAll();
     await saveRecords();
+    if(target && accessToken && spreadsheetId){ await deleteFromSheet(target); }
   }
 
   addBtn.addEventListener('click', async ()=>{
@@ -1133,6 +1310,101 @@
 
   nowDefaults();
   loadRecords();
+})();
+</script>
+
+<script>
+(function(){
+  // --- 加到主畫面（PWA 安裝提示，跨 Android / iOS / 桌機 Windows）---
+  const INSTALL_DISMISS_KEY = 'pwa:installDismissedAt';
+  const DISMISS_DAYS = 7;
+  let deferredPrompt = null;
+
+  const banner = document.getElementById('installBanner');
+  const titleEl = document.getElementById('installTitle');
+  const subEl = document.getElementById('installSub');
+  const actionBtn = document.getElementById('installActionBtn');
+  const closeBtn = document.getElementById('installCloseBtn');
+
+  function isStandalone(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function isIOS(){
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  async function wasDismissedRecently(){
+    try{
+      const res = await window.storage.get(INSTALL_DISMISS_KEY, false);
+      if(!res) return false;
+      const ts = Number(res.value);
+      if(!ts) return false;
+      return (Date.now() - ts) < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+    }catch(e){ return false; }
+  }
+  async function markDismissed(){
+    try{ await window.storage.set(INSTALL_DISMISS_KEY, String(Date.now()), false); }catch(e){ /* 忽略 */ }
+  }
+
+  function showBanner(){ if(banner) banner.classList.add('show'); }
+  function hideBanner(){ if(banner) banner.classList.remove('show'); }
+
+  if(closeBtn){
+    closeBtn.addEventListener('click', async ()=>{
+      hideBanner();
+      await markDismissed();
+    });
+  }
+
+  if(actionBtn){
+    actionBtn.addEventListener('click', async ()=>{
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        try{ await deferredPrompt.userChoice; }catch(e){ /* 忽略 */ }
+        deferredPrompt = null;
+        hideBanner();
+        await markDismissed();
+      }
+    });
+  }
+
+  // Android / 桌機 Chrome、Edge（Windows）：瀏覽器會自動觸發此事件
+  window.addEventListener('beforeinstallprompt', async (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    if(isStandalone()) return;
+    if(await wasDismissedRecently()) return;
+    titleEl.textContent = '加到主畫面';
+    subEl.textContent = '安裝後可以像 App 一樣，直接從桌面或主畫面打開';
+    actionBtn.style.display = 'inline-flex';
+    actionBtn.textContent = '加入主畫面';
+    setTimeout(showBanner, 1200);
+  });
+
+  window.addEventListener('appinstalled', ()=>{
+    hideBanner();
+    deferredPrompt = null;
+  });
+
+  // iOS Safari 沒有 beforeinstallprompt，改用自動彈出的圖文提示
+  async function maybeShowIOSBanner(){
+    if(!isIOS() || isStandalone()) return;
+    if(await wasDismissedRecently()) return;
+    titleEl.textContent = '加到主畫面';
+    subEl.textContent = '點下方分享圖示 → 「加入主畫面」，就能像 App 一樣使用';
+    actionBtn.style.display = 'none';
+    setTimeout(showBanner, 1500);
+  }
+  window.addEventListener('load', maybeShowIOSBanner);
+
+  // 註冊 Service Worker（PWA 可安裝的必要條件之一）
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('service-worker.js').catch(err=>{
+        console.error('Service worker 註冊失敗', err);
+      });
+    });
+  }
 })();
 </script>
 </body>
