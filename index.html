@@ -450,9 +450,10 @@
     let tokenClient;
     let accessToken = null;
     let spreadsheetId = null;
-    let cachedRows = []; // 儲存所有 Raw 數據
+    let sheetName = 'Sheet1'; // 動態抓取第一頁名稱
+    let cachedRows = [];
     let chartInstance = null;
-    let currentRange = '7D'; // 預設顯示 7 日
+    let currentRange = '7D';
 
     window.onload = () => {
         const now = new Date();
@@ -490,7 +491,16 @@
 
             if (data.files && data.files.length > 0) {
                 spreadsheetId = data.files[0].id;
+                // 取得試算表資訊，確認第一個 Sheet 的名稱
+                let sheetMetaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                let sheetMeta = await sheetMetaRes.json();
+                if (sheetMeta.sheets && sheetMeta.sheets.length > 0) {
+                    sheetName = sheetMeta.sheets[0].properties.title;
+                }
             } else {
+                // 自動建立試算表
                 let createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
                     method: 'POST',
                     headers: {
@@ -519,11 +529,13 @@
                 });
                 let newSheet = await createRes.json();
                 spreadsheetId = newSheet.spreadsheetId;
+                sheetName = 'Sheet1';
             }
 
             await loadDataFromSheet();
         } catch (err) {
             console.error("雲端檔案載入失敗:", err);
+            alert("初始化雲端試算表失敗，請重新連線與授權");
         }
     }
 
@@ -549,7 +561,9 @@
         saveBtn.disabled = true;
 
         try {
-            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A:E:append?valueInputOption=USER_ENTERED`;
+            const encodedSheetName = encodeURIComponent(sheetName);
+            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A:E:append?valueInputOption=USER_ENTERED`;
+            
             const res = await fetch(appendUrl, {
                 method: 'POST',
                 headers: {
@@ -561,17 +575,25 @@
                 })
             });
 
+            const resData = await res.json();
+
             if (res.ok) {
                 document.getElementById('sys').value = '';
                 document.getElementById('dia').value = '';
                 document.getElementById('pulse').value = '';
                 await loadDataFromSheet();
             } else {
-                alert('寫入雲端失敗，請重新嘗試');
+                console.error("寫入錯誤回應:", resData);
+                // 提示使用者具體原因
+                if (resData.error && resData.error.status === 'PERMISSION_DENIED') {
+                    alert('權限不足：請嘗試先將雲端硬碟中的「血壓紀錄表」刪除，再回到此網頁重新按「G 授權」寫入。');
+                } else {
+                    alert('寫入雲端失敗：' + (resData.error ? resData.error.message : '請重新嘗試'));
+                }
             }
         } catch (err) {
             console.error(err);
-            alert('發生網路錯誤！');
+            alert('發生網路錯誤，請檢查網路連線！');
         } finally {
             saveBtn.innerText = '🧬 新增紀錄';
             saveBtn.disabled = false;
@@ -580,7 +602,8 @@
 
     async function loadDataFromSheet() {
         try {
-            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A2:E1000`;
+            const encodedSheetName = encodeURIComponent(sheetName);
+            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A2:E1000`;
             const res = await fetch(readUrl, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
@@ -643,7 +666,6 @@
         }
     }
 
-    /* 📊 趨勢圖時間篩選與繪製邏輯 */
     function openTrendChart() {
         if (cachedRows.length === 0) {
             alert("目前尚無量測紀錄，請先新增數據！");
