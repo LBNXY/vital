@@ -389,15 +389,15 @@
         </div>
         <div class="form-row">
             <div class="form-col-3">
-                <label>收縮壓 (mmHg)</label>
+                <label>收縮壓</label>
                 <input type="number" id="sys">
             </div>
             <div class="form-col-3">
-                <label>舒張壓 (mmHg)</label>
+                <label>舒張壓</label>
                 <input type="number" id="dia">
             </div>
             <div class="form-col-3">
-                <label>心跳 (bpm)</label>
+                <label>心跳</label>
                 <input type="number" id="pulse">
             </div>
         </div>
@@ -431,12 +431,12 @@
 
         <!-- 切換區間頁籤 -->
         <div class="filter-tabs">
-            <button class="tab-btn active" onclick="switchPeriod('1D')">每日</button>
-            <button class="tab-btn" onclick="switchPeriod('7D')">7日</button>
-            <button class="tab-btn" onclick="switchPeriod('30D')">30日</button>
-            <button class="tab-btn" onclick="switchPeriod('6M')">6個月</button>
-            <button class="tab-btn" onclick="switchPeriod('1Y')">1年</button>
-            <button class="tab-btn" onclick="switchPeriod('ALL')">全部</button>
+            <button class="tab-btn active" onclick="switchPeriod('1D', event)">每日</button>
+            <button class="tab-btn" onclick="switchPeriod('7D', event)">7日</button>
+            <button class="tab-btn" onclick="switchPeriod('30D', event)">30日</button>
+            <button class="tab-btn" onclick="switchPeriod('6M', event)">6個月</button>
+            <button class="tab-btn" onclick="switchPeriod('1Y', event)">1年</button>
+            <button class="tab-btn" onclick="switchPeriod('ALL', event)">全部</button>
         </div>
 
         <canvas id="bpChart" height="220"></canvas>
@@ -594,7 +594,7 @@
                 cachedRows = data.values;
                 const rows = data.values;
                 const todayStr = new Date().toISOString().split('T')[0];
-                
+
                 const todayRecords = rows.filter(r => r[0] === todayStr);
                 todayCountElem.innerText = `🗓️ 今日 ${todayRecords.length} 次`;
 
@@ -654,12 +654,13 @@
         renderChartByRange(currentRange);
     }
 
-    function switchPeriod(range) {
+    function switchPeriod(range, evt) {
         currentRange = range;
-        // 更新按鈕 active 樣式
         const btns = document.querySelectorAll('.tab-btn');
         btns.forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
+        if (evt && evt.target) {
+            evt.target.classList.add('active');
+        }
 
         renderChartByRange(range);
     }
@@ -670,7 +671,6 @@
         const now = new Date();
         let filteredData = [];
 
-        // 依據選擇的區間過濾資料
         filteredData = cachedRows.filter(r => {
             const itemDate = new Date(`${r[0]}T${r[1]}`);
             if (isNaN(itemDate)) return false;
@@ -690,7 +690,7 @@
                 const diffTime = Math.abs(now - itemDate);
                 return diffTime <= 365 * 24 * 60 * 60 * 1000;
             } else {
-                return true; // ALL
+                return true;
             }
         });
 
