@@ -1,7 +1,7 @@
 {
-  "name": "阿總量血壓",
-  "short_name": "阿總量血壓",
-  "description": "記錄與追蹤血壓、心跳的小日記，並可同步到 Google 試算表",
+  "name": "阿總健康日誌",
+  "short_name": "阿總健康日誌",
+  "description": "記錄與追蹤血壓、BMI，並可同步到 Google 試算表",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
