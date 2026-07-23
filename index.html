@@ -1,299 +1,416 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶總血壓紀錄 (個人 Google 雲端版)</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Huninn&display=swap" rel="stylesheet">
-    <!-- 載入 Google Identity Services SDK -->
+    <title>寶總血壓紀錄</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
     <style>
-        :root{
-            --bg: #F2FAFF;
-            --paper: #FFFFFF;
-            --ink: #3A5568;
-            --ink-soft: #93AEC0;
-            --line: #DDEFF8;
-            --accent: #7EC8E3;
-            --accent-deep: #4CA0CB;
-            --accent-soft: #E9F6FC;
-            --mint: #7FC7A0;
-            --mint-bg: #E6F6EE;
-            --honey: #D6A23C;
-            --honey-bg: #FBF0DA;
-            --peach: #E08A52;
-            --peach-bg: #FCEADD;
-            --rose: #D9628A;
-            --rose-bg: #FBE2EC;
-            --crimson: #C1476B;
-            --crimson-bg: #F8D9E2;
+        :root {
+            --bg-color: #f0f7fa;
+            --card-bg: #ffffff;
+            --primary-color: #51a3c8;
+            --text-color: #4a5568;
+            --border-radius: 16px;
         }
-        *{box-sizing:border-box;}
-        body{
-            margin:0; background:var(--bg); color:var(--ink);
-            font-family:'Huninn', sans-serif; min-height:100vh;
-            padding: 32px 16px 100px; position:relative; overflow-x:hidden;
-        }
-        .wrap{max-width:600px; margin:0 auto; position:relative; z-index:1;}
-        header{margin-bottom:20px; text-align:center;}
-        .eyebrow{font-size:13px;letter-spacing:0.08em;color:var(--accent-deep);margin:0 0 4px;font-weight:700;}
-        h1{font-family:'Baloo 2','Huninn',sans-serif;font-size:30px;margin:0 0 4px;font-weight:700;}
 
-        /* 帳號登入與雲端狀態卡片 */
-        .auth-card {
-            background: var(--paper); border: 1px solid var(--line);
-            border-radius: 18px; padding: 14px 18px; margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
         }
-        .user-status { font-size: 13px; font-weight: 700; color: var(--ink); }
-        .auth-btn {
-            background: var(--paper); border: 1.5px solid var(--line);
-            color: var(--ink); padding: 8px 14px; border-radius: 12px;
-            font-size: 13px; font-weight: 700; font-family: 'Huninn', sans-serif;
-            cursor: pointer; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        .auth-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
 
-        .legend-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:20px;}
-        .legend-title{font-size:13px;font-weight:700;color:var(--accent-deep);margin-bottom:10px;}
-        .legend-rows{display:flex;flex-direction:column;gap:7px;}
-        .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);}
-        .legend-row .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-        .legend-row .range{margin-left:auto;color:var(--ink-soft);font-family:'Baloo 2',sans-serif;font-weight:600;}
-
-        .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:22px;margin-bottom:20px;}
-        .card h2{font-size:14px;color:var(--accent-deep);margin:0 0 16px;font-weight:700;}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-        .field{display:flex;flex-direction:column;gap:6px;}
-        .field label{font-size:12px;color:var(--ink-soft);font-weight:700;}
-        .field input{font-family:'Baloo 2',sans-serif;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:#FBFDFE;color:var(--ink);width:100%;}
-        .three{grid-template-columns:1fr 1fr 1fr;}
-        
-        .btn{
-            margin-top:18px; width:100%;
-            background:linear-gradient(135deg,var(--accent),var(--accent-deep));
-            color:#fff; border:none; padding:14px 16px; border-radius:999px;
-            font-size:15px; font-weight:700; cursor:pointer;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
+        .header {
+            text-align: center;
         }
-        .btn:disabled{ opacity: 0.6; cursor: not-allowed; }
 
-        @media (max-width:420px){ .grid{grid-template-columns:1fr;} }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #2c5282;
+            margin: 5px 0;
+        }
+
+        .header .subtitle {
+            font-size: 0.8rem;
+            color: #a0aec0;
+            letter-spacing: 2px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        }
+
+        .auth-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: #cbd5e0;
+            border-radius: 50%;
+        }
+
+        .dot.active {
+            background-color: #48bb78;
+        }
+
+        button.btn-auth {
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-field {
+            flex: 1;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            color: #718096;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:disabled {
+            background-color: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        /* 歷史紀錄表格樣式 */
+        .history-list {
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        th {
+            color: #718096;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <p class="eyebrow">MY VITALS DIARY</p>
-    <h1>⭐ 寶總血壓紀錄 ✨</h1>
-  </header>
 
-  <!-- 雲端帳號授權狀態 -->
-  <div class="auth-card">
-    <div class="user-status" id="userStatus">☁️ 請登入以建立個人雲端資料夾</div>
-    <button class="auth-btn" id="loginBtn">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="16" alt="Google">
-      <span id="loginBtnText">登入 Google 帳號</span>
-    </button>
-  </div>
+<div class="container">
+    <div class="header">
+        <div class="subtitle">MY VITALS DIARY</div>
+        <h1>⭐ 寶總血壓紀錄 ✨</h1>
+    </div>
 
-  <div class="legend-card">
-    <div class="legend-title">📏 成人血壓標準對照</div>
-    <div class="legend-rows">
-      <div class="legend-row"><span class="dot" style="background:var(--mint);"></span>正常<span class="range">&lt;120 / &lt;80</span></div>
-      <div class="legend-row"><span class="dot" style="background:var(--honey);"></span>血壓偏高<span class="range">120–129 / &lt;80</span></div>
-      <div class="legend-row"><span class="dot" style="background:var(--peach);"></span>高血壓第一期<span class="range">130–139 / 80–89</span></div>
-      <div class="legend-row"><span class="dot" style="background:var(--rose);"></span>高血壓第二期<span class="range">≥140 / ≥90</span></div>
-      <div class="legend-row"><span class="dot" style="background:var(--crimson);"></span>高血壓危象<span class="range">&gt;180 / &gt;120</span></div>
+    <!-- 授權狀態卡片 -->
+    <div class="card auth-status">
+        <div class="status-badge">
+            <span class="dot" id="statusDot"></span>
+            <span id="statusText">正在檢查連線狀態...</span>
+        </div>
+        <button class="btn-auth" id="authBtn" onclick="handleAuth()">G 授權</button>
     </div>
-  </div>
 
-  <div class="card">
-    <h2>📊 新增紀錄至雲端</h2>
-    <div class="grid">
-      <div class="field"><label for="dateInput">日期</label><input type="date" id="dateInput"></div>
-      <div class="field"><label for="timeInput">時間</label><input type="time" id="timeInput"></div>
+    <!-- 輸入表單卡片 -->
+    <div class="card">
+        <h3>📊 新增紀錄至雲端</h3>
+        <div class="form-group">
+            <div class="form-row">
+                <div class="form-field">
+                    <label>日期</label>
+                    <input type="date" id="inputDate">
+                </div>
+                <div class="form-field">
+                    <label>時間</label>
+                    <input type="time" id="inputTime">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label>收縮壓</label>
+                    <input type="number" id="sys" placeholder="120">
+                </div>
+                <div class="form-field">
+                    <label>舒張壓</label>
+                    <input type="number" id="dia" placeholder="80">
+                </div>
+                <div class="form-field">
+                    <label>心跳</label>
+                    <input type="number" id="pulse" placeholder="75">
+                </div>
+            </div>
+            <button class="btn-submit" id="saveBtn" onclick="saveData()" disabled>🫧 寫入個人雲端試算表</button>
+        </div>
     </div>
-    <div class="grid three" style="margin-top:14px;">
-      <div class="field"><label for="sysInput">收縮壓</label><input type="number" id="sysInput" inputmode="numeric"></div>
-      <div class="field"><label for="diaInput">舒張壓</label><input type="number" id="diaInput" inputmode="numeric"></div>
-      <div class="field"><label for="pulseInput">心跳</label><input type="number" id="pulseInput" inputmode="numeric"></div>
+
+    <!-- 歷史紀錄列表卡片 -->
+    <div class="card">
+        <h3>📋 歷史紀錄</h3>
+        <div class="history-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>日期時間</th>
+                        <th>收縮壓</th>
+                        <th>舒張壓</th>
+                        <th>心跳</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr><td colspan="4">尚無紀錄或尚未載入</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <button class="btn" id="addBtn" disabled>請先登入 Google 帳號</button>
-  </div>
 </div>
 
 <script>
-  // 已經為你替換為申請好的 Client ID
-  const CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
-  // 請求權限：可存取與建立應用程式建立的檔案
-  const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    
+    let tokenClient;
+    let accessToken = null;
+    let spreadsheetId = null;
 
-  let accessToken = null;
-  let folderId = null;
-  let spreadsheetId = null;
-  let tokenClient;
+    // 初始化預設時間與 GIS
+    window.onload = () => {
+        const now = new Date();
+        document.getElementById('inputDate').value = now.toISOString().split('T')[0];
+        document.getElementById('inputTime').value = now.toTimeString().slice(0, 5);
 
-  const $ = id => document.getElementById(id);
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: async (response) => {
+                if (response.error !== undefined) {
+                    throw (response);
+                }
+                accessToken = response.access_token;
+                document.getElementById('statusDot').classList.add('active');
+                document.getElementById('statusText').innerText = '已連線至個人的雲端硬碟！';
+                document.getElementById('authBtn').innerText = '已授權';
+                document.getElementById('saveBtn').disabled = false;
 
-  function pad(n){ return String(n).padStart(2,'0'); }
-  function nowDefaults(){
-    const d = new Date();
-    $('dateInput').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    $('timeInput').value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
+                // 授權成功後，自動找尋或建立檔案並拉取歷史紀錄
+                await initDriveAndSheet();
+            },
+        });
+    };
 
-  // 初始化 Google Auth 用戶端
-  window.onload = () => {
-    nowDefaults();
-    if (typeof google !== 'undefined') {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: async (response) => {
-          if (response.error) {
-            console.error(response);
+    function handleAuth() {
+        tokenClient.requestAccessToken({prompt: ''});
+    }
+
+    // 初始化 Drive 資料夾與 Sheet 試算表
+    async function initDriveAndSheet() {
+        try {
+            // 1. 搜尋是否有「血壓紀錄表」
+            let query = "name = '血壓紀錄表' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false";
+            let res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            let data = await res.json();
+
+            if (data.files && data.files.length > 0) {
+                spreadsheetId = data.files[0].id;
+            } else {
+                // 2. 若無則新建一個 Sheet 並預設表頭
+                let createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        properties: { title: '血壓紀錄表' },
+                        sheets: [{
+                            properties: { title: 'Sheet1' },
+                            data: [{
+                                startRow: 0,
+                                startColumn: 0,
+                                rowData: [{
+                                    values: [
+                                        { userEnteredValue: { stringValue: '日期' } },
+                                        { userEnteredValue: { stringValue: '時間' } },
+                                        { userEnteredValue: { stringValue: '收縮壓' } },
+                                        { userEnteredValue: { stringValue: '舒張壓' } },
+                                        { userEnteredValue: { stringValue: '心跳' } }
+                                    ]
+                                }]
+                            }]
+                        }]
+                    })
+                });
+                let newSheet = await createRes.json();
+                spreadsheetId = newSheet.spreadsheetId;
+            }
+
+            // 讀取當前 Sheet 資料
+            await loadHistoryData();
+        } catch (err) {
+            console.error("初始化試算表失敗:", err);
+            alert("試算表初始化失敗，請檢查 Console");
+        }
+    }
+
+    // 寫入資料至 Sheet
+    async function saveData() {
+        const date = document.getElementById('inputDate').value;
+        const time = document.getElementById('inputTime').value;
+        const sys = document.getElementById('sys').value;
+        const dia = document.getElementById('dia').value;
+        const pulse = document.getElementById('pulse').value;
+
+        if (!sys || !dia || !pulse) {
+            alert('請填寫完整的數值！');
             return;
-          }
-          accessToken = response.access_token;
-          $('userStatus').textContent = '⚡ 正在初始化雲端資料夾...';
-          $('loginBtnText').textContent = '已授權';
-          
-          // 初始化雲端資料夾與試算表
-          await setupCloudDrive();
-        },
-      });
-    }
-  };
+        }
 
-  $('loginBtn').addEventListener('click', () => {
-    if (tokenClient) {
-      tokenClient.requestAccessToken();
-    } else {
-      alert("Google API 尚未載入完成，請稍後再試！");
-    }
-  });
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.innerText = '寫入中...';
+        saveBtn.disabled = true;
 
-  // 設定或檢查使用者的雲端硬碟資料夾與檔案
-  async function setupCloudDrive() {
-    try {
-      // 1. 搜尋是否已有「血壓紀錄資料庫」資料夾
-      folderId = await findFolder('血壓紀錄資料庫');
-      if (!folderId) {
-        folderId = await createFolder('血壓紀錄資料庫');
-      }
+        try {
+            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A:E:append?valueInputOption=USER_ENTERED`;
+            const res = await fetch(appendUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    values: [[date, time, sys, dia, pulse]]
+                })
+            });
 
-      // 2. 搜尋資料夾內是否已有「血壓紀錄表」試算表
-      spreadsheetId = await findFile(folderId, '血壓紀錄表');
-      if (!spreadsheetId) {
-        spreadsheetId = await createSpreadsheet(folderId, '血壓紀錄表');
-      }
-
-      $('userStatus').textContent = '🟢 已連線至個人的雲端硬碟！';
-      $('addBtn').disabled = false;
-      $('addBtn').textContent = '🫧 寫入個人雲端試算表';
-    } catch (err) {
-      console.error(err);
-      $('userStatus').textContent = '✕ 雲端初始化失敗';
-    }
-  }
-
-  // ---- Google Drive & Sheets API 封裝 ----
-
-  async function findFolder(folderName) {
-    const q = `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    const data = await res.json();
-    return data.files && data.files.length > 0 ? data.files[0].id : null;
-  }
-
-  async function createFolder(folderName) {
-    const meta = { name: folderName, mimeType: 'application/vnd.google-apps.folder' };
-    const res = await fetch('https://www.googleapis.com/drive/v3/files', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(meta)
-    });
-    const data = await res.json();
-    return data.id;
-  }
-
-  async function findFile(parentFolderId, fileName) {
-    const q = `'${parentFolderId}' in parents and name='${fileName}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-    const data = await res.json();
-    return data.files && data.files.length > 0 ? data.files[0].id : null;
-  }
-
-  async function createSpreadsheet(parentFolderId, title) {
-    const meta = { name: title, mimeType: 'application/vnd.google-apps.spreadsheet', parents: [parentFolderId] };
-    const res = await fetch('https://www.googleapis.com/drive/v3/files', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(meta)
-    });
-    const data = await res.json();
-    const fileId = data.id;
-
-    // 初始化表頭
-    await appendRowToSheet(fileId, ['日期', '時間', '收縮壓 (mmHg)', '舒張壓 (mmHg)', '心跳 (bpm)']);
-    return fileId;
-  }
-
-  async function appendRowToSheet(fileId, rowData) {
-    const range = 'Sheet1!A1';
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${fileId}/values/${range}:append?valueInputOption=USER_ENTERED`;
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ values: [rowData] })
-    });
-  }
-
-  // 新增紀錄點擊事件
-  $('addBtn').addEventListener('click', async () => {
-    const date = $('dateInput').value, time = $('timeInput').value;
-    const sys = $('sysInput').value, dia = $('diaInput').value, pulse = $('pulseInput').value;
-
-    if(!date || !time || !sys || !dia || !pulse) {
-      alert("請完整填寫所有欄位！");
-      return;
+            if (res.ok) {
+                alert('寫入成功！');
+                // 清空輸入欄
+                document.getElementById('sys').value = '';
+                document.getElementById('dia').value = '';
+                document.getElementById('pulse').value = '';
+                // 重新載入列表
+                await loadHistoryData();
+            } else {
+                const errData = await res.json();
+                console.error('寫入失敗:', errData);
+                alert('寫入失敗！請查看 Console');
+            }
+        } catch (err) {
+            console.error('寫入異常:', err);
+            alert('網路或寫入發生錯誤！');
+        } finally {
+            saveBtn.innerText = '🫧 寫入個人雲端試算表';
+            saveBtn.disabled = false;
+        }
     }
 
-    const btn = $('addBtn');
-    try {
-      btn.disabled = true;
-      btn.textContent = "⏳ 上傳至 Google 雲端中...";
+    // 從 Sheet 讀取資料並印出在畫面上
+    async function loadHistoryData() {
+        if (!spreadsheetId) return;
 
-      await appendRowToSheet(spreadsheetId, [date, time, sys, dia, pulse]);
+        try {
+            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A2:E100`;
+            const res = await fetch(readUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            const data = await res.json();
 
-      alert("已成功儲存至你的雲端硬碟「血壓紀錄資料庫 / 血壓紀錄表」！");
-      $('sysInput').value = ''; $('diaInput').value = ''; $('pulseInput').value = '';
-      nowDefaults();
-    } catch (err) {
-      console.error(err);
-      alert("寫入失敗，請確認已完成 Google 帳號授權。");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "🫧 寫入個人雲端試算表";
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            if (data.values && data.values.length > 0) {
+                // 將最新紀錄排在最上面
+                const reversedData = data.values.reverse();
+                reversedData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row[0] || ''} ${row[1] || ''}</td>
+                        <td>${row[2] || '-'}</td>
+                        <td>${row[3] || '-'}</td>
+                        <td>${row[4] || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4">目前雲端表格尚無任何紀錄</td></tr>';
+            }
+        } catch (err) {
+            console.error("讀取歷史紀錄失敗:", err);
+        }
     }
-  });
 </script>
+
 </body>
 </html>
