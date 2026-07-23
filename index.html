@@ -302,16 +302,19 @@
     border:1px solid var(--line);
     border-radius:16px;
     padding:12px 14px;
-    display:flex; align-items:center; justify-content:space-between;
+    display:flex; flex-direction:column;
     margin-bottom:8px;
-    gap:10px;
-    flex-wrap:wrap;
+    gap:6px;
     overflow:hidden;
     box-shadow: inset 4px 0 0 0 transparent;
   }
   .record.is-alert{
     box-shadow: inset 4px 0 0 0 var(--alert-color, var(--crimson));
     background: color-mix(in srgb, var(--alert-color, var(--crimson)) 6%, var(--paper));
+  }
+  .record-main{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; flex-wrap:wrap;
   }
   .record-left{display:flex; align-items:center; gap:12px; min-width:0; flex-wrap:wrap;}
   .record-time{
@@ -325,6 +328,10 @@
     display:flex; align-items:center; gap:4px; white-space:nowrap;
   }
   .record-right{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .record-meta{
+    font-size:11px; color:var(--ink-soft); opacity:0.75;
+    padding-left:2px;
+  }
   .tag{
     font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700;
     white-space:nowrap;
@@ -832,6 +839,13 @@
     return `${md}（${weekday}）`;
   }
 
+  function formatCreatedAt(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    if(isNaN(d)) return '';
+    return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   function todayStr(){
     const d = new Date();
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -929,15 +943,18 @@
         const alertColor = bpAlert ? col.fg : (pulseAlert ? pcol.fg : '');
         html += `
           <div class="record ${isAlert ? 'is-alert' : ''}" style="${isAlert ? `--alert-color:${alertColor};` : ''}">
-            <div class="record-left">
-              <span class="record-time">${r.time}</span>
-              <span class="record-nums">${r.sys}/${r.dia}<span class="u">mmHg</span></span>
-              <span class="record-pulse">💙 ${r.pulse}<span class="u">bpm</span>${pulseAlert ? ` <span class="tag" style="color:${pcol.fg}; background:${pcol.bg};">⚠️ ${pc.label}</span>` : ''}</span>
+            <div class="record-main">
+              <div class="record-left">
+                <span class="record-time">${r.time}</span>
+                <span class="record-nums">${r.sys}/${r.dia}<span class="u">mmHg</span></span>
+                <span class="record-pulse">💙 ${r.pulse}<span class="u">bpm</span>${pulseAlert ? ` <span class="tag" style="color:${pcol.fg}; background:${pcol.bg};">⚠️ ${pc.label}</span>` : ''}</span>
+              </div>
+              <div class="record-right">
+                <span class="tag" style="color:${col.fg}; background:${col.bg};">${icon}${c.label}</span>
+                <button class="del-btn" data-id="${r.id}" title="刪除">✕</button>
+              </div>
             </div>
-            <div class="record-right">
-              <span class="tag" style="color:${col.fg}; background:${col.bg};">${icon}${c.label}</span>
-              <button class="del-btn" data-id="${r.id}" title="刪除">✕</button>
-            </div>
+            ${r.createdAt ? `<div class="record-meta">📝 登記於 ${formatCreatedAt(r.createdAt)}</div>` : ''}
           </div>
         `;
       });
@@ -1099,7 +1116,8 @@
 
     const record = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
-      date, time, sys, dia, pulse
+      date, time, sys, dia, pulse,
+      createdAt: new Date().toISOString()
     };
     records.push(record);
     renderAll();
