@@ -1,6 +1,6 @@
 {
   "name": "寶總血壓紀錄",
-  "short_name": "血壓小日記",
+  "short_name": "阿總量血壓",
   "description": "記錄與追蹤血壓、心跳的小日記，並可同步到 Google 試算表",
   "start_url": "./index.html",
   "scope": "./",
