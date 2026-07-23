@@ -1,14 +1,16 @@
 {
-  "name": "阿總量血壓",
-  "short_name": "阿總血壓",
-  "description": "寶總血壓紀錄",
-  "start_url": "index.html",
+  "name": "寶總血壓紀錄",
+  "short_name": "血壓小日記",
+  "description": "記錄與追蹤血壓、心跳的小日記，並可同步到 Google 試算表",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#F2FAFF",
   "theme_color": "#4CA0CB",
-  "orientation": "portrait",
+  "lang": "zh-Hant",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
