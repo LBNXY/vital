@@ -4,246 +4,456 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>寶總血壓紀錄</title>
+    <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Chart.js 繪圖庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #f0f7fa;
+            --bg-color: #f0f7ff;
             --card-bg: #ffffff;
-            --primary-color: #51a3c8;
-            --text-color: #4a5568;
-            --border-radius: 16px;
+            --card-sub-bg: #eaf4ff;
+            --text-main: #4a5568;
+            --text-muted: #8899a6;
+            --primary-blue: #5baada;
+            --title-blue: #2b5c8f;
+            --border-radius: 20px;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             display: flex;
             justify-content: center;
-            padding: 20px;
+            padding: 20px 10px;
             margin: 0;
         }
 
         .container {
             width: 100%;
-            max-width: 500px;
+            max-width: 480px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
         }
 
+        /* 標題 */
         .header {
             text-align: center;
+            margin-bottom: 5px;
         }
-
-        .header h1 {
-            font-size: 1.5rem;
-            color: #2c5282;
-            margin: 5px 0;
-        }
-
         .header .subtitle {
-            font-size: 0.8rem;
-            color: #a0aec0;
-            letter-spacing: 2px;
+            font-size: 0.75rem;
+            color: var(--primary-blue);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            color: var(--title-blue);
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
+        /* 卡片通用 */
         .card {
             background: var(--card-bg);
             border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            padding: 18px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
         }
 
-        .auth-status {
+        /* Google 授權頂欄 */
+        .auth-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: #fff;
+            padding: 12px 18px;
+            border-radius: 16px;
         }
-
-        .status-badge {
+        .auth-status {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #4a5568;
         }
-
         .dot {
-            width: 10px;
-            height: 10px;
-            background-color: #cbd5e0;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
+            background-color: #cbd5e0;
         }
-
-        .dot.active {
-            background-color: #48bb78;
-        }
-
-        button.btn-auth {
+        .dot.active { background-color: #48bb78; }
+        .btn-auth {
             border: 1px solid #e2e8f0;
             background: #fff;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.85rem;
+            color: #4a5568;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .form-group {
+        /* 標準對照卡片 */
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 12px;
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            align-items: center;
+            gap: 6px;
+        }
+        .ref-table {
+            width: 100%;
+            font-size: 0.8rem;
+            border-collapse: collapse;
+        }
+        .ref-table td {
+            padding: 4px 0;
+        }
+        .ref-table td:last-child {
+            text-align: right;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .dot-ref {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            margin-right: 6px;
         }
 
+        /* 最新量測卡片 */
+        .stats-card {
+            background-color: var(--card-sub-bg);
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+        }
+        .stats-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2b6cb0;
+            margin-bottom: 8px;
+        }
+        .badge-count {
+            background: #dceeff;
+            color: #2b6cb0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        .stats-empty {
+            font-size: 0.82rem;
+            color: #718096;
+            margin: 4px 0 0 0;
+        }
+
+        /* 新增紀錄表單 */
         .form-row {
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
-
-        .form-field {
-            flex: 1;
-        }
-
-        .form-field label {
+        .form-col { flex: 1; }
+        .form-col-3 { flex: 1; }
+        label {
             display: block;
-            font-size: 0.8rem;
-            margin-bottom: 4px;
-            color: #718096;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
         }
-
         input {
             width: 100%;
-            padding: 10px;
+            padding: 10px 12px;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 12px;
             box-sizing: border-box;
-            font-size: 1rem;
-            text-align: center;
+            font-size: 0.95rem;
+            color: #2d3748;
+            outline: none;
+            background: #fafafa;
         }
-
-        .btn-submit {
+        input:focus {
+            border-color: var(--primary-blue);
+            background: #fff;
+        }
+        .btn-add {
             width: 100%;
-            background-color: var(--primary-color);
+            background-color: var(--primary-blue);
             color: white;
             border: none;
             padding: 12px;
             border-radius: 25px;
-            font-size: 1rem;
-            font-weight: bold;
+            font-size: 0.95rem;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.2s;
+            margin-top: 6px;
+            box-shadow: 0 4px 10px rgba(91, 170, 218, 0.3);
         }
 
-        .btn-submit:disabled {
-            background-color: #cbd5e0;
-            cursor: not-allowed;
+        /* 歷史紀錄區塊 */
+        .history-box {
+            border: 1.5px dashed #cbd5e0;
+            border-radius: 16px;
+            padding: 24px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 8px;
         }
-
-        /* 歷史紀錄表格樣式 */
-        .history-list {
-            margin-top: 10px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        table {
+        .history-box p { margin: 2px 0; }
+        .history-list-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            margin-top: 5px;
         }
-
-        th, td {
-            padding: 8px;
-            text-align: center;
+        .history-list-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            padding-bottom: 8px;
             border-bottom: 1px solid #edf2f7;
         }
+        .history-list-table td {
+            padding: 8px 0;
+            border-bottom: 1px solid #f7fafc;
+            text-align: center;
+        }
 
-        th {
+        /* 趨勢圖按鈕 */
+        .btn-trend {
+            width: 100%;
+            background: #fff;
+            border: 1px solid #5baada;
+            color: #5baada;
+            padding: 10px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            transition: all 0.2s;
+        }
+        .btn-trend:hover {
+            background: #5baada;
+            color: #fff;
+        }
+
+        /* 趨勢圖 Modal 視窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+        .modal-card {
+            background: #fff;
+            width: 100%;
+            max-width: 520px;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--title-blue);
+        }
+        .btn-close {
+            background: #f0f4f8;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
             color: #718096;
+        }
+
+        /* 時間區間切換頁籤 (Filter Tabs) */
+        .filter-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f0f4f8;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            justify-content: space-between;
+        }
+        .tab-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 6px 0;
+            font-size: 0.75rem;
             font-weight: 600;
+            color: #718096;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .tab-btn.active {
+            background: #ffffff;
+            color: var(--primary-blue);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            font-weight: 700;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 標題 -->
     <div class="header">
         <div class="subtitle">MY VITALS DIARY</div>
         <h1>⭐ 寶總血壓紀錄 ✨</h1>
     </div>
 
-    <!-- 授權狀態卡片 -->
-    <div class="card auth-status">
-        <div class="status-badge">
+    <!-- Google 雲端連線狀態 -->
+    <div class="auth-bar">
+        <div class="auth-status">
             <span class="dot" id="statusDot"></span>
-            <span id="statusText">正在檢查連線狀態...</span>
+            <span id="statusText">未授權雲端硬碟</span>
         </div>
         <button class="btn-auth" id="authBtn" onclick="handleAuth()">G 授權</button>
     </div>
 
-    <!-- 輸入表單卡片 -->
+    <!-- 成人血壓 & 心跳標準對照 -->
     <div class="card">
-        <h3>📊 新增紀錄至雲端</h3>
-        <div class="form-group">
-            <div class="form-row">
-                <div class="form-field">
-                    <label>日期</label>
-                    <input type="date" id="inputDate">
-                </div>
-                <div class="form-field">
-                    <label>時間</label>
-                    <input type="time" id="inputTime">
+        <div class="section-title">✏️ 成人血壓標準對照</div>
+        <table class="ref-table">
+            <tr><td><span class="dot-ref" style="background:#68d391;"></span>正常</td><td>&lt;120 / &lt;80</td></tr>
+            <tr><td><span class="dot-ref" style="background:#f6ad55;"></span>血壓偏高</td><td>120–129 / &lt;80</td></tr>
+            <tr><td><span class="dot-ref" style="background:#ed8936;"></span>高血壓第一期</td><td>130–139 / 80–89</td></tr>
+            <tr><td><span class="dot-ref" style="background:#e53e3e;"></span>高血壓第二期</td><td>≥140 / ≥90</td></tr>
+            <tr><td><span class="dot-ref" style="background:#9b2c2c;"></span>高血壓危象</td><td>&gt;180 / &gt;120</td></tr>
+        </table>
+
+        <div class="section-title" style="margin-top: 14px;">💙 心跳標準對照 (休息時)</div>
+        <table class="ref-table">
+            <tr><td><span class="dot-ref" style="background:#f6ad55;"></span>心跳過低</td><td>&lt;60 bpm</td></tr>
+            <tr><td><span class="dot-ref" style="background:#68d391;"></span>正常</td><td>60–100 bpm</td></tr>
+            <tr><td><span class="dot-ref" style="background:#e53e3e;"></span>心跳過高</td><td>&gt;100 bpm</td></tr>
+        </table>
+    </div>
+
+    <!-- 最新量測卡片 -->
+    <div class="stats-card">
+        <div class="stats-header">
+            <span>最新量測</span>
+            <span class="badge-count" id="todayCount">🗓️ 今日 0 次</span>
+        </div>
+        <div class="stats-empty" id="latestText">還沒有紀錄呦～新增第一筆量測開始追蹤吧 ☁️</div>
+    </div>
+
+    <!-- 新增紀錄 -->
+    <div class="card">
+        <div class="section-title">☁️ 新增紀錄</div>
+        <div class="form-row">
+            <div class="form-col">
+                <label>日期</label>
+                <input type="date" id="inputDate">
+            </div>
+            <div class="form-col">
+                <label>時間</label>
+                <input type="time" id="inputTime">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-col-3">
+                <label>收縮壓 (mmHg)</label>
+                <input type="number" id="sys">
+            </div>
+            <div class="form-col-3">
+                <label>舒張壓 (mmHg)</label>
+                <input type="number" id="dia">
+            </div>
+            <div class="form-col-3">
+                <label>心跳 (bpm)</label>
+                <input type="number" id="pulse">
+            </div>
+        </div>
+        <button class="btn-add" id="saveBtn" onclick="saveData()">🧬 新增紀錄</button>
+    </div>
+
+    <!-- 歷史紀錄 -->
+    <div>
+        <div class="section-title" style="padding-left: 4px;">📓 歷史紀錄</div>
+        <div class="card" style="padding: 12px 16px;">
+            <div id="historyContainer">
+                <div class="history-box">
+                    <p>還沒有任何紀錄 ☁️</p>
+                    <p style="font-size: 0.78rem; margin-top: 4px;">填寫上方表單新增第一筆血壓量測吧</p>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-field">
-                    <label>收縮壓</label>
-                    <input type="number" id="sys" placeholder="120">
-                </div>
-                <div class="form-field">
-                    <label>舒張壓</label>
-                    <input type="number" id="dia" placeholder="80">
-                </div>
-                <div class="form-field">
-                    <label>心跳</label>
-                    <input type="number" id="pulse" placeholder="75">
-                </div>
-            </div>
-            <button class="btn-submit" id="saveBtn" onclick="saveData()" disabled>🫧 寫入個人雲端試算表</button>
         </div>
     </div>
 
-    <!-- 歷史紀錄列表卡片 -->
-    <div class="card">
-        <h3>📋 歷史紀錄</h3>
-        <div class="history-list">
-            <table>
-                <thead>
-                    <tr>
-                        <th>日期時間</th>
-                        <th>收縮壓</th>
-                        <th>舒張壓</th>
-                        <th>心跳</th>
-                    </tr>
-                </thead>
-                <tbody id="historyTableBody">
-                    <tr><td colspan="4">尚無紀錄或尚未載入</td></tr>
-                </tbody>
-            </table>
+    <!-- 查看血壓趨勢圖按鈕 -->
+    <button class="btn-trend" onclick="openTrendChart()">📈 查看血壓趨勢圖</button>
+</div>
+
+<!-- 趨勢圖 Modal 視窗 -->
+<div class="modal-overlay" id="chartModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div class="modal-title">📈 血壓趨勢分析</div>
+            <button class="btn-close" onclick="closeTrendChart()">✕</button>
         </div>
+
+        <!-- 切換區間頁籤 -->
+        <div class="filter-tabs">
+            <button class="tab-btn active" onclick="switchPeriod('1D')">每日</button>
+            <button class="tab-btn" onclick="switchPeriod('7D')">7日</button>
+            <button class="tab-btn" onclick="switchPeriod('30D')">30日</button>
+            <button class="tab-btn" onclick="switchPeriod('6M')">6個月</button>
+            <button class="tab-btn" onclick="switchPeriod('1Y')">1年</button>
+            <button class="tab-btn" onclick="switchPeriod('ALL')">全部</button>
+        </div>
+
+        <canvas id="bpChart" height="220"></canvas>
     </div>
 </div>
 
 <script>
     const CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    
+
     let tokenClient;
     let accessToken = null;
     let spreadsheetId = null;
+    let cachedRows = []; // 儲存所有 Raw 數據
+    let chartInstance = null;
+    let currentRange = '7D'; // 預設顯示 7 日
 
-    // 初始化預設時間與 GIS
     window.onload = () => {
         const now = new Date();
         document.getElementById('inputDate').value = now.toISOString().split('T')[0];
@@ -260,10 +470,8 @@
                 document.getElementById('statusDot').classList.add('active');
                 document.getElementById('statusText').innerText = '已連線至個人的雲端硬碟！';
                 document.getElementById('authBtn').innerText = '已授權';
-                document.getElementById('saveBtn').disabled = false;
 
-                // 授權成功後，自動找尋或建立檔案並拉取歷史紀錄
-                await initDriveAndSheet();
+                await initSheetAndLoadData();
             },
         });
     };
@@ -272,10 +480,8 @@
         tokenClient.requestAccessToken({prompt: ''});
     }
 
-    // 初始化 Drive 資料夾與 Sheet 試算表
-    async function initDriveAndSheet() {
+    async function initSheetAndLoadData() {
         try {
-            // 1. 搜尋是否有「血壓紀錄表」
             let query = "name = '血壓紀錄表' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false";
             let res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
@@ -285,7 +491,6 @@
             if (data.files && data.files.length > 0) {
                 spreadsheetId = data.files[0].id;
             } else {
-                // 2. 若無則新建一個 Sheet 並預設表頭
                 let createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
                     method: 'POST',
                     headers: {
@@ -316,16 +521,18 @@
                 spreadsheetId = newSheet.spreadsheetId;
             }
 
-            // 讀取當前 Sheet 資料
-            await loadHistoryData();
+            await loadDataFromSheet();
         } catch (err) {
-            console.error("初始化試算表失敗:", err);
-            alert("試算表初始化失敗，請檢查 Console");
+            console.error("雲端檔案載入失敗:", err);
         }
     }
 
-    // 寫入資料至 Sheet
     async function saveData() {
+        if (!accessToken || !spreadsheetId) {
+            alert('請先點擊上方「G 授權」登入 Google 帳號！');
+            return;
+        }
+
         const date = document.getElementById('inputDate').value;
         const time = document.getElementById('inputTime').value;
         const sys = document.getElementById('sys').value;
@@ -333,7 +540,7 @@
         const pulse = document.getElementById('pulse').value;
 
         if (!sys || !dia || !pulse) {
-            alert('請填寫完整的數值！');
+            alert('請完整填寫收縮壓、舒張壓與心跳！');
             return;
         }
 
@@ -355,60 +562,193 @@
             });
 
             if (res.ok) {
-                alert('寫入成功！');
-                // 清空輸入欄
                 document.getElementById('sys').value = '';
                 document.getElementById('dia').value = '';
                 document.getElementById('pulse').value = '';
-                // 重新載入列表
-                await loadHistoryData();
+                await loadDataFromSheet();
             } else {
-                const errData = await res.json();
-                console.error('寫入失敗:', errData);
-                alert('寫入失敗！請查看 Console');
+                alert('寫入雲端失敗，請重新嘗試');
             }
         } catch (err) {
-            console.error('寫入異常:', err);
-            alert('網路或寫入發生錯誤！');
+            console.error(err);
+            alert('發生網路錯誤！');
         } finally {
-            saveBtn.innerText = '🫧 寫入個人雲端試算表';
+            saveBtn.innerText = '🧬 新增紀錄';
             saveBtn.disabled = false;
         }
     }
 
-    // 從 Sheet 讀取資料並印出在畫面上
-    async function loadHistoryData() {
-        if (!spreadsheetId) return;
-
+    async function loadDataFromSheet() {
         try {
-            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A2:E100`;
+            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A2:E1000`;
             const res = await fetch(readUrl, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
             const data = await res.json();
 
-            const tbody = document.getElementById('historyTableBody');
-            tbody.innerHTML = '';
+            const historyContainer = document.getElementById('historyContainer');
+            const todayCountElem = document.getElementById('todayCount');
+            const latestTextElem = document.getElementById('latestText');
 
             if (data.values && data.values.length > 0) {
-                // 將最新紀錄排在最上面
-                const reversedData = data.values.reverse();
-                reversedData.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${row[0] || ''} ${row[1] || ''}</td>
-                        <td>${row[2] || '-'}</td>
-                        <td>${row[3] || '-'}</td>
-                        <td>${row[4] || '-'}</td>
+                cachedRows = data.values;
+                const rows = data.values;
+                const todayStr = new Date().toISOString().split('T')[0];
+                
+                const todayRecords = rows.filter(r => r[0] === todayStr);
+                todayCountElem.innerText = `🗓️ 今日 ${todayRecords.length} 次`;
+
+                const last = rows[rows.length - 1];
+                latestTextElem.innerText = `最新：${last[0]} ${last[1]} | 收縮壓 ${last[2]} / 舒張壓 ${last[3]} / 心跳 ${last[4]}`;
+
+                let tableHtml = `
+                    <table class="history-list-table">
+                        <thead>
+                            <tr>
+                                <th>時間</th>
+                                <th>收縮壓</th>
+                                <th>舒張壓</th>
+                                <th>心跳</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                [...rows].reverse().forEach(row => {
+                    tableHtml += `
+                        <tr>
+                            <td>${row[0]} ${row[1]}</td>
+                            <td><strong>${row[2]}</strong></td>
+                            <td><strong>${row[3]}</strong></td>
+                            <td>${row[4]}</td>
+                        </tr>
                     `;
-                    tbody.appendChild(tr);
                 });
+
+                tableHtml += `</tbody></table>`;
+                historyContainer.innerHTML = tableHtml;
             } else {
-                tbody.innerHTML = '<tr><td colspan="4">目前雲端表格尚無任何紀錄</td></tr>';
+                cachedRows = [];
+                todayCountElem.innerText = `🗓️ 今日 0 次`;
+                latestTextElem.innerText = `還沒有紀錄呦～新增第一筆量測開始追蹤吧 ☁️`;
+                historyContainer.innerHTML = `
+                    <div class="history-box">
+                        <p>還沒有任何紀錄 ☁️</p>
+                        <p style="font-size: 0.78rem; margin-top: 4px;">填寫上方表單新增第一筆血壓量測吧</p>
+                    </div>
+                `;
             }
         } catch (err) {
-            console.error("讀取歷史紀錄失敗:", err);
+            console.error("讀取歷史資料錯誤:", err);
         }
+    }
+
+    /* 📊 趨勢圖時間篩選與繪製邏輯 */
+    function openTrendChart() {
+        if (cachedRows.length === 0) {
+            alert("目前尚無量測紀錄，請先新增數據！");
+            return;
+        }
+
+        document.getElementById('chartModal').style.display = 'flex';
+        renderChartByRange(currentRange);
+    }
+
+    function switchPeriod(range) {
+        currentRange = range;
+        // 更新按鈕 active 樣式
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        renderChartByRange(range);
+    }
+
+    function renderChartByRange(range) {
+        if (cachedRows.length === 0) return;
+
+        const now = new Date();
+        let filteredData = [];
+
+        // 依據選擇的區間過濾資料
+        filteredData = cachedRows.filter(r => {
+            const itemDate = new Date(`${r[0]}T${r[1]}`);
+            if (isNaN(itemDate)) return false;
+
+            if (range === '1D') {
+                return r[0] === now.toISOString().split('T')[0];
+            } else if (range === '7D') {
+                const diffTime = Math.abs(now - itemDate);
+                return diffTime <= 7 * 24 * 60 * 60 * 1000;
+            } else if (range === '30D') {
+                const diffTime = Math.abs(now - itemDate);
+                return diffTime <= 30 * 24 * 60 * 60 * 1000;
+            } else if (range === '6M') {
+                const diffTime = Math.abs(now - itemDate);
+                return diffTime <= 180 * 24 * 60 * 60 * 1000;
+            } else if (range === '1Y') {
+                const diffTime = Math.abs(now - itemDate);
+                return diffTime <= 365 * 24 * 60 * 60 * 1000;
+            } else {
+                return true; // ALL
+            }
+        });
+
+        if (filteredData.length === 0) {
+            alert("此時間範圍內尚無數據！");
+            return;
+        }
+
+        const labels = filteredData.map(r => range === '1D' ? r[1] : `${r[0].slice(5)} ${r[1]}`);
+        const sysData = filteredData.map(r => Number(r[2]));
+        const diaData = filteredData.map(r => Number(r[3]));
+
+        const ctx = document.getElementById('bpChart').getContext('2d');
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '收縮壓 (SYS)',
+                        data: sysData,
+                        borderColor: '#e53e3e',
+                        backgroundColor: 'rgba(229, 62, 62, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: '舒張壓 (DIA)',
+                        data: diaData,
+                        borderColor: '#3182ce',
+                        backgroundColor: 'rgba(49, 130, 206, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    y: {
+                        suggestedMin: 60,
+                        suggestedMax: 160
+                    }
+                }
+            }
+        });
+    }
+
+    function closeTrendChart() {
+        document.getElementById('chartModal').style.display = 'none';
     }
 </script>
 
