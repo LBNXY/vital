@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿總量血壓</title>
+<title>血壓小日記</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Huninn&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -576,7 +576,7 @@
       <button class="range-tab" data-range="all">整體</button>
     </div>
     <div class="chart-wrap" id="chartWrap">
-      <canvas id="trendChart"></canvas>
+      <div id="trendChart"></div>
     </div>
     <div class="chart-empty" id="chartEmpty" style="display:none;">這個範圍內還沒有紀錄 ☁️</div>
     <div class="chart-legend">
@@ -587,13 +587,11 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 (function(){
   const STORAGE_KEY = 'bp:records';
   let records = [];
   let currentRange = '7d';
-  let trendChart = null;
 
   // --- Google 雲端同步（Google Identity Services + Sheets API）---
   const GOOGLE_CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
@@ -974,70 +972,75 @@
     return `${d.getMonth()+1}/${d.getDate()}`;
   }
 
+  function escapeXml(str){
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function buildLineChartSVG(data, range){
+    const width = 640, height = 260;
+    const padL = 40, padR = 40, padT = 18, padB = 32;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const n = data.length;
+    const xStep = n > 1 ? plotW / (n - 1) : 0;
+    const xAt = i => padL + (n > 1 ? i * xStep : plotW / 2);
+
+    const bpMin = 40, bpMax = 200;
+    const pulseMin = 40, pulseMax = 160;
+    const clampY = y => Math.max(padT, Math.min(padT + plotH, y));
+    const yBp = v => clampY(padT + plotH - ((v - bpMin) / (bpMax - bpMin)) * plotH);
+    const yPulse = v => clampY(padT + plotH - ((v - pulseMin) / (pulseMax - pulseMin)) * plotH);
+
+    function pathFor(values, yfn){
+      return values.map((v,i)=> `${i===0?'M':'L'} ${xAt(i).toFixed(1)} ${yfn(v).toFixed(1)}`).join(' ');
+    }
+    function pointsFor(values, yfn, color){
+      return values.map((v,i)=> `<circle cx="${xAt(i).toFixed(1)}" cy="${yfn(v).toFixed(1)}" r="3" fill="${color}"/>`).join('');
+    }
+
+    const sysPath = pathFor(data.map(r=>r.sys), yBp);
+    const diaPath = pathFor(data.map(r=>r.dia), yBp);
+    const pulsePath = pathFor(data.map(r=>r.pulse), yPulse);
+
+    let gridLines = '';
+    for(let g=0; g<=4; g++){
+      const gy = padT + (plotH/4)*g;
+      gridLines += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${width-padR}" y2="${gy.toFixed(1)}" stroke="#EFF9FD" stroke-width="1"/>`;
+    }
+
+    const labelCount = Math.min(6, n);
+    let xLabels = '';
+    for(let k=0; k<labelCount; k++){
+      const idx = labelCount === 1 ? 0 : Math.round(k * (n-1) / (labelCount-1));
+      xLabels += `<text x="${xAt(idx).toFixed(1)}" y="${height-10}" font-size="10" fill="#93AEC0" text-anchor="middle">${escapeXml(formatChartLabel(data[idx], range))}</text>`;
+    }
+
+    return `
+      <svg viewBox="0 0 ${width} ${height}" width="100%" height="240" xmlns="http://www.w3.org/2000/svg" style="font-family:'Huninn',sans-serif;">
+        ${gridLines}
+        <path d="${sysPath}" fill="none" stroke="#4CA0CB" stroke-width="2.5"/>
+        <path d="${diaPath}" fill="none" stroke="#6FB8D9" stroke-width="2.5"/>
+        <path d="${pulsePath}" fill="none" stroke="#D9628A" stroke-width="2.5" stroke-dasharray="6,4"/>
+        ${pointsFor(data.map(r=>r.sys), yBp, '#4CA0CB')}
+        ${pointsFor(data.map(r=>r.dia), yBp, '#6FB8D9')}
+        ${pointsFor(data.map(r=>r.pulse), yPulse, '#D9628A')}
+        ${xLabels}
+        <text x="${padL}" y="12" font-size="10" fill="#93AEC0">mmHg</text>
+        <text x="${width-padR}" y="12" font-size="10" fill="#93AEC0" text-anchor="end">bpm</text>
+      </svg>
+    `;
+  }
+
   function renderChart(){
     const data = getRangeRecords(currentRange);
     if(data.length === 0){
       chartWrap.style.display = 'none';
       chartEmpty.style.display = 'block';
-      if(trendChart){ trendChart.destroy(); trendChart = null; }
       return;
     }
     chartWrap.style.display = 'block';
     chartEmpty.style.display = 'none';
-
-    const labels = data.map(r => formatChartLabel(r, currentRange));
-    const sysData = data.map(r => r.sys);
-    const diaData = data.map(r => r.dia);
-    const pulseData = data.map(r => r.pulse);
-
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    if(trendChart){ trendChart.destroy(); }
-
-    trendChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label:'收縮壓', data: sysData, borderColor:'#4CA0CB', backgroundColor:'#4CA0CB',
-            yAxisID:'y', tension:0.3, pointRadius:3, borderWidth:2
-          },
-          {
-            label:'舒張壓', data: diaData, borderColor:'#6FB8D9', backgroundColor:'#6FB8D9',
-            yAxisID:'y', tension:0.3, pointRadius:3, borderWidth:2
-          },
-          {
-            label:'心跳', data: pulseData, borderColor:'#D9628A', backgroundColor:'#D9628A',
-            yAxisID:'y1', tension:0.3, pointRadius:3, borderWidth:2, borderDash:[4,3]
-          }
-        ]
-      },
-      options: {
-        responsive:true,
-        maintainAspectRatio:false,
-        interaction:{ mode:'index', intersect:false },
-        plugins:{
-          legend:{ display:false },
-          tooltip:{
-            backgroundColor:'#FFFFFF', titleColor:'#3A5568', bodyColor:'#3A5568',
-            borderColor:'#DDEFF8', borderWidth:1, padding:10
-          }
-        },
-        scales:{
-          x:{ grid:{ display:false }, ticks:{ color:'#93AEC0', font:{ size:11 }, maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
-          y:{
-            position:'left', suggestedMin:40, suggestedMax:200,
-            title:{ display:true, text:'mmHg', color:'#93AEC0', font:{ size:11 } },
-            grid:{ color:'#EFF9FD' }, ticks:{ color:'#93AEC0', font:{ size:11 } }
-          },
-          y1:{
-            position:'right', suggestedMin:40, suggestedMax:160,
-            title:{ display:true, text:'bpm', color:'#93AEC0', font:{ size:11 } },
-            grid:{ display:false }, ticks:{ color:'#93AEC0', font:{ size:11 } }
-          }
-        }
-      }
-    });
+    document.getElementById('trendChart').innerHTML = buildLineChartSVG(data, currentRange);
   }
 
   function renderAll(){
