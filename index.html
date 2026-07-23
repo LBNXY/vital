@@ -1,778 +1,1118 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>寶總血壓紀錄</title>
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- Chart.js 繪圖庫 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --bg-color: #f0f7ff;
-            --card-bg: #ffffff;
-            --card-sub-bg: #eaf4ff;
-            --text-main: #4a5568;
-            --text-muted: #8899a6;
-            --primary-blue: #5baada;
-            --title-blue: #2b5c8f;
-            --border-radius: 20px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>血壓小日記</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Huninn&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg: #F2FAFF;
+    --paper: #FFFFFF;
+    --ink: #3A5568;
+    --ink-soft: #93AEC0;
+    --line: #DDEFF8;
+    --accent: #7EC8E3;
+    --accent-deep: #4CA0CB;
+    --accent-soft: #E9F6FC;
+    --sky: #CDEBF9;
+    --sky-soft: #EFF9FD;
+    --mint: #7FC7A0;
+    --mint-bg: #E6F6EE;
+    --honey: #D6A23C;
+    --honey-bg: #FBF0DA;
+    --peach: #E08A52;
+    --peach-bg: #FCEADD;
+    --rose: #D9628A;
+    --rose-bg: #FBE2EC;
+    --crimson: #C1476B;
+    --crimson-bg: #F8D9E2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Huninn', sans-serif;
+    min-height:100vh;
+    padding: 32px 16px 100px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before, body::after{
+    content:'';
+    position:fixed;
+    border-radius:50%;
+    filter: blur(2px);
+    z-index:0;
+    pointer-events:none;
+  }
+  body::before{
+    width:300px; height:300px; top:-110px; right:-100px;
+    background: radial-gradient(circle, rgba(126,200,227,0.30), transparent 70%);
+  }
+  body::after{
+    width:320px; height:320px; bottom:-140px; left:-120px;
+    background: radial-gradient(circle, rgba(205,235,249,0.55), transparent 70%);
+  }
+  .wrap{max-width:600px; margin:0 auto; position:relative; z-index:1;}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            padding: 20px 10px;
-            margin: 0;
-        }
+  header{margin-bottom:26px; text-align:center;}
+  .eyebrow{
+    font-size:13px;
+    letter-spacing:0.08em;
+    color:var(--accent-deep);
+    margin:0 0 4px;
+    font-weight:700;
+  }
+  h1{
+    font-family:'Baloo 2','Huninn',sans-serif;
+    font-size:30px;
+    margin:0 0 4px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  h1 .spark{display:inline-block; animation: bounce 1.6s ease-in-out infinite;}
+  @keyframes bounce{ 0%,100%{transform:translateY(0) rotate(0deg);} 50%{transform:translateY(-4px) rotate(-8deg);} }
 
-        .container {
-            width: 100%;
-            max-width: 480px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+  /* Google 雲端連線提示列 */
+  .auth-bar{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:20px;
+    box-shadow: 0 10px 20px -16px rgba(90,150,180,0.30);
+  }
+  .auth-status{
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:700; color:var(--ink);
+    min-width:0;
+  }
+  .auth-status span.txt{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .auth-dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--ink-soft);
+    flex-shrink:0;
+    transition:background .2s ease;
+  }
+  .auth-dot.active{
+    background:var(--mint);
+    box-shadow:0 0 0 4px color-mix(in srgb, var(--mint) 25%, transparent);
+  }
+  .auth-btn{
+    font-family:'Huninn', sans-serif;
+    font-size:12.5px; font-weight:700;
+    border:none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color:#fff;
+    padding:8px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    flex-shrink:0;
+    box-shadow: 0 6px 14px -6px rgba(76,160,203,0.55);
+    transition: transform .12s ease;
+  }
+  .auth-btn:hover{ transform:translateY(-1px); }
+  .auth-btn.connected{
+    background:var(--mint-bg);
+    color:var(--mint);
+    box-shadow:none;
+  }
+  .auth-note{
+    font-size:11.5px; color:var(--ink-soft); margin-top:-12px; margin-bottom:20px; line-height:1.5; padding-left:4px;
+  }
+  .sub{color:var(--ink-soft); font-size:14px; margin:0;}
 
-        /* 標題 */
-        .header {
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .header .subtitle {
-            font-size: 0.75rem;
-            color: var(--primary-blue);
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        .header h1 {
-            font-size: 1.6rem;
-            color: var(--title-blue);
-            margin: 4px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
+  /* Legend */
+  .legend-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:16px 18px;
+    margin-bottom:20px;
+  }
+  .legend-title{font-size:13px; font-weight:700; color:var(--accent-deep); margin-bottom:10px;}
+  .legend-rows{display:flex; flex-direction:column; gap:7px;}
+  .legend-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink);}
+  .legend-row .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .legend-row .range{margin-left:auto; color:var(--ink-soft); font-family:'Baloo 2',sans-serif; font-weight:600;}
 
-        /* 卡片通用 */
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 18px 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-        }
+  /* Monitor card - signature element */
+  .monitor{
+    background: linear-gradient(150deg, #FFFFFF 0%, #EAF7FD 55%, #D9EEFA 100%);
+    border-radius:26px;
+    padding:24px 24px 20px;
+    color:var(--ink);
+    position:relative;
+    overflow:hidden;
+    margin-bottom:20px;
+    border: 1px solid var(--line);
+    box-shadow: 0 14px 30px -18px rgba(90,150,180,0.35);
+  }
+  .monitor::before{
+    content:'☁️';
+    position:absolute; top:14px; right:18px; font-size:20px; opacity:0.85;
+  }
+  .monitor::after{
+    content:'🫧';
+    position:absolute; bottom:10px; right:70px; font-size:16px; opacity:0.5;
+  }
+  .monitor.is-alert{
+    border: 2px solid var(--alert-color, var(--crimson));
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--alert-color, var(--crimson)) 15%, transparent), 0 14px 30px -18px rgba(90,150,180,0.35);
+  }
+  .monitor-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .monitor-label{font-size:12px; letter-spacing:0.06em; color:var(--accent-deep); font-weight:700;}
+  .today-badge{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11.5px; font-weight:700; color:var(--accent-deep);
+    background:var(--accent-soft);
+    padding:4px 10px; border-radius:20px;
+    margin-left:8px;
+  }
+  .reminder-note{
+    margin-top:10px; font-size:12.5px; font-weight:700; color:var(--accent-deep);
+    display:flex; align-items:center; gap:5px;
+    background:var(--accent-soft);
+    padding:8px 12px; border-radius:12px;
+  }
+  .day-count{
+    font-size:12px; font-weight:400; color:var(--ink-soft); margin-left:6px;
+  }
+  .monitor-time{font-size:12px; color:var(--ink-soft);}
+  .monitor-body{
+    display:flex; align-items:baseline; gap:20px; margin-top:8px; flex-wrap:wrap;
+  }
+  .bp-reading{font-family:'Baloo 2', sans-serif; display:flex; align-items:baseline; gap:4px;}
+  .bp-reading .sys{font-size:54px; font-weight:700; line-height:1; color:var(--accent-deep);}
+  .bp-reading .slash{font-size:28px; color:var(--ink-soft);}
+  .bp-reading .dia{font-size:36px; font-weight:700; color:#6FB8D9; line-height:1;}
+  .bp-unit{font-size:11px; color:var(--ink-soft); margin-left:2px; font-family:'Huninn',sans-serif;}
+  .pulse-block{
+    display:flex; align-items:center; gap:8px; color:var(--ink);
+    padding-left:16px; border-left:2px dashed var(--line);
+  }
+  .pulse-num{font-family:'Baloo 2', sans-serif; font-size:26px; font-weight:700;}
+  .pulse-heart{font-size:22px; display:inline-block; animation: beat 1.1s ease-in-out infinite;}
+  @keyframes beat{ 0%,100%{transform:scale(1);} 25%{transform:scale(1.18);} 40%{transform:scale(0.95);} }
+  .status-row{margin-top:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .status-pill{
+    font-size:12px; font-weight:700;
+    padding:5px 12px; border-radius:20px;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .status-pill.is-alert{ animation: pulse-alert 1.6s ease-in-out infinite; }
+  @keyframes pulse-alert{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.15); } }
+  .status-pill .dot{width:7px; height:7px; border-radius:50%;}
+  .alert-note{
+    margin-top:8px; font-size:12.5px; font-weight:700; color:var(--crimson);
+    display:flex; align-items:center; gap:5px;
+  }
+  .empty-monitor{color:var(--ink-soft); font-size:14px; padding:16px 0 6px; text-align:center;}
 
-        /* Google 授權頂欄 */
-        .auth-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-            padding: 12px 18px;
-            border-radius: 16px;
-        }
-        .auth-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        .dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background-color: #cbd5e0;
-        }
-        .dot.active { background-color: #48bb78; }
-        .btn-auth {
-            border: 1px solid #e2e8f0;
-            background: #fff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-            color: #4a5568;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
+  /* Form */
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow: 0 10px 24px -20px rgba(90,150,180,0.30);
+  }
+  .card h2{
+    font-size:14px;
+    color:var(--accent-deep); margin:0 0 16px; font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  .grid{display:grid; grid-template-columns: 1fr 1fr; gap:14px;}
+  .field{display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .field.full{grid-column:1 / -1;}
+  .field label{font-size:12px; color:var(--ink-soft); font-weight:700;}
+  .field input{
+    font-family:'Baloo 2', sans-serif;
+    font-size:16px;
+    padding:10px 12px;
+    border:2px solid var(--line);
+    border-radius:12px;
+    background:#FBFDFE;
+    color:var(--ink);
+    width:100%;
+    min-width:0;
+  }
+  .field input:focus{outline:none; border-color:var(--accent);}
+  .three{grid-template-columns: 1fr 1fr 1fr;}
 
-        /* 標準對照卡片 */
-        .section-title {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--primary-blue);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .ref-table {
-            width: 100%;
-            font-size: 0.8rem;
-            border-collapse: collapse;
-        }
-        .ref-table td {
-            padding: 4px 0;
-        }
-        .ref-table td:last-child {
-            text-align: right;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-        .dot-ref {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
+  .btn{
+    margin-top:18px;
+    width:100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color:#fff;
+    border:none;
+    padding:14px 16px;
+    border-radius:999px;
+    font-size:15px;
+    font-weight:700;
+    font-family:'Huninn', sans-serif;
+    cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow: 0 8px 18px -8px rgba(76,160,203,0.55);
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow: 0 10px 22px -8px rgba(76,160,203,0.65);}
+  .btn:focus-visible{outline:2px solid var(--accent-deep); outline-offset:2px;}
+  .error-msg{
+    color:var(--crimson); font-size:13px; margin-top:8px; display:none;
+    font-weight:600;
+  }
 
-        /* 最新量測卡片 */
-        .stats-card {
-            background-color: var(--card-sub-bg);
-            border-radius: var(--border-radius);
-            padding: 16px 20px;
-        }
-        .stats-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #2b6cb0;
-            margin-bottom: 8px;
-        }
-        .badge-count {
-            background: #dceeff;
-            color: #2b6cb0;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-        .stats-empty {
-            font-size: 0.82rem;
-            color: #718096;
-            margin: 4px 0 0 0;
-        }
+  /* Summary strip */
+  .summary{
+    display:flex; gap:10px; margin-bottom:20px;
+  }
+  .summary .stat{
+    flex:1;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 14px;
+    text-align:center;
+    min-width:0;
+  }
+  .summary .stat .k{font-size:11px; color:var(--ink-soft); font-weight:700;}
+  .summary .stat .v{font-family:'Baloo 2',sans-serif; font-size:20px; font-weight:700; margin-top:2px; color:var(--accent-deep);}
 
-        /* 新增紀錄表單 */
-        .form-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-        .form-col { flex: 1; }
-        .form-col-3 { flex: 1; }
-        label {
-            display: block;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-        input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            box-sizing: border-box;
-            font-size: 0.95rem;
-            color: #2d3748;
-            outline: none;
-            background: #fafafa;
-        }
-        input:focus {
-            border-color: var(--primary-blue);
-            background: #fff;
-        }
-        .btn-add {
-            width: 100%;
-            background-color: var(--primary-blue);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 25px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 6px;
-            box-shadow: 0 4px 10px rgba(91, 170, 218, 0.3);
-        }
+  /* History */
+  .history h2{
+    font-size:14px;
+    color:var(--accent-deep); margin:0 0 12px; font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  .day-group{margin-bottom:16px;}
+  .day-label{font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px; padding-left:4px;}
+  .record{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:8px;
+    gap:10px;
+    flex-wrap:wrap;
+    overflow:hidden;
+    box-shadow: inset 4px 0 0 0 transparent;
+  }
+  .record.is-alert{
+    box-shadow: inset 4px 0 0 0 var(--alert-color, var(--crimson));
+    background: color-mix(in srgb, var(--alert-color, var(--crimson)) 6%, var(--paper));
+  }
+  .record-left{display:flex; align-items:center; gap:12px; min-width:0; flex-wrap:wrap;}
+  .record-time{
+    font-family:'Baloo 2', sans-serif; font-size:12px; color:var(--ink-soft);
+    min-width:42px; font-weight:600;
+  }
+  .record-nums{font-family:'Baloo 2', sans-serif; font-size:17px; font-weight:700; white-space:nowrap;}
+  .record-nums .u{font-size:11px; color:var(--ink-soft); font-weight:400; margin-left:2px; font-family:'Huninn',sans-serif;}
+  .record-pulse{
+    font-size:13px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:4px; white-space:nowrap;
+  }
+  .record-right{display:flex; align-items:center; gap:8px; flex-shrink:0;}
+  .tag{
+    font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700;
+    white-space:nowrap;
+  }
+  .del-btn{
+    background:var(--accent-soft); border:none; color:var(--accent-deep); cursor:pointer;
+    font-size:14px; line-height:1; padding:6px 8px; border-radius:50%;
+    width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .del-btn:hover{background:var(--rose-bg); color:var(--crimson);}
 
-        /* 歷史紀錄區塊 */
-        .history-box {
-            border: 1.5px dashed #cbd5e0;
-            border-radius: 16px;
-            padding: 24px 16px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 8px;
-        }
-        .history-box p { margin: 2px 0; }
-        .history-list-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            margin-top: 5px;
-        }
-        .history-list-table th {
-            color: var(--text-muted);
-            font-weight: 600;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #edf2f7;
-        }
-        .history-list-table td {
-            padding: 8px 0;
-            border-bottom: 1px solid #f7fafc;
-            text-align: center;
-        }
+  .empty-state{
+    text-align:center; padding:40px 20px; color:var(--ink-soft);
+    font-size:14px; border:2px dashed var(--line); border-radius:20px;
+    background: var(--paper);
+  }
 
-        /* 趨勢圖按鈕 */
-        .btn-trend {
-            width: 100%;
-            background: #fff;
-            border: 1px solid #5baada;
-            color: #5baada;
-            padding: 10px;
-            border-radius: 20px;
-            font-size: 0.88rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-            transition: all 0.2s;
-        }
-        .btn-trend:hover {
-            background: #5baada;
-            color: #fff;
-        }
+  /* Trend chart */
+  .range-tabs{
+    display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;
+  }
+  .range-tab{
+    font-family:'Huninn', sans-serif;
+    font-size:12.5px; font-weight:700;
+    padding:7px 14px; border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--sky-soft);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .range-tab:hover{ background:var(--accent-soft); }
+  .range-tab.active{
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color:#fff;
+    border-color:transparent;
+  }
+  .chart-wrap{
+    position:relative;
+    width:100%;
+    height:240px;
+  }
+  .chart-empty{
+    text-align:center; padding:32px 10px; color:var(--ink-soft); font-size:13.5px;
+  }
+  .chart-legend{
+    display:flex; gap:16px; justify-content:center; margin-top:12px; flex-wrap:wrap;
+  }
+  .chart-legend span{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12px; color:var(--ink-soft); font-weight:600;
+  }
+  .chart-legend i{
+    width:10px; height:10px; border-radius:50%; display:inline-block;
+  }
 
-        /* 趨勢圖 Modal 視窗 */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 15px;
-        }
-        .modal-card {
-            background: #fff;
-            width: 100%;
-            max-width: 520px;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            position: relative;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .modal-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--title-blue);
-        }
-        .btn-close {
-            background: #f0f4f8;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            font-size: 1.1rem;
-            cursor: pointer;
-            color: #718096;
-        }
+  /* Chart trigger button + modal popup */
+  .chart-trigger-btn{
+    background: var(--paper);
+    color: var(--accent-deep);
+    border: 2px solid var(--accent);
+    box-shadow: 0 10px 24px -10px rgba(58,85,104,0.35);
+    position:fixed;
+    left:50%;
+    bottom:18px;
+    transform:translateX(-50%);
+    width:calc(100% - 32px);
+    max-width:560px;
+    margin:0;
+    z-index:50;
+  }
+  .chart-trigger-btn:hover{
+    background: var(--accent-soft);
+    transform:translateX(-50%);
+    box-shadow: 0 10px 24px -10px rgba(58,85,104,0.35);
+  }
+  .standard-trigger-btn{
+    background: var(--paper);
+    color: var(--accent-deep);
+    border: 2px solid var(--accent);
+    box-shadow: 0 10px 20px -14px rgba(58,85,104,0.30);
+    margin-top:0;
+    margin-bottom:20px;
+  }
+  .standard-trigger-btn:hover{
+    background: var(--accent-soft);
+    transform:none;
+    box-shadow: 0 10px 20px -14px rgba(58,85,104,0.30);
+  }
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background: rgba(58,85,104,0.35);
+    align-items:center; justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-card{
+    background:var(--paper);
+    border-radius:22px;
+    padding:22px;
+    max-width:560px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    box-shadow: 0 24px 50px -20px rgba(58,85,104,0.45);
+  }
+  .modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .modal-header h2{
+    font-size:15px; color:var(--accent-deep); font-weight:700; margin:0;
+    display:flex; align-items:center; gap:6px;
+  }
+  .modal-close{
+    background:var(--accent-soft); border:none; color:var(--accent-deep); cursor:pointer;
+    width:30px; height:30px; border-radius:50%; font-size:15px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .modal-close:hover{ background:var(--rose-bg); color:var(--crimson); }
 
-        /* 時間區間切換頁籤 (Filter Tabs) */
-        .filter-tabs {
-            display: flex;
-            gap: 4px;
-            background: #f0f4f8;
-            padding: 4px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            justify-content: space-between;
-        }
-        .tab-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 6px 0;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #718096;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .tab-btn.active {
-            background: #ffffff;
-            color: var(--primary-blue);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-            font-weight: 700;
-        }
-    </style>
+  @media (max-width:420px){
+    .bp-reading .sys{font-size:42px;}
+    .bp-reading .dia{font-size:28px;}
+    .grid{grid-template-columns:1fr;}
+    .three{grid-template-columns:1fr 1fr 1fr;}
+  }
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="container">
-    <!-- 標題 -->
-    <div class="header">
-        <div class="subtitle">MY VITALS DIARY</div>
-        <h1>⭐ 寶總血壓紀錄 ✨</h1>
+  <header>
+    <p class="eyebrow">MY VITALS DIARY</p>
+    <h1><span class="spark">⭐</span> 寶總血壓紀錄 <span class="spark" style="animation-delay:.4s;">✨</span></h1>
+  </header>
+
+  <div class="auth-bar">
+    <div class="auth-status">
+      <span class="auth-dot" id="statusDot"></span>
+      <span class="txt" id="statusText">尚未連接雲端 ☁️</span>
     </div>
+    <button class="auth-btn" id="authBtn">連接 Google</button>
+  </div>
+  <p class="auth-note" id="authNote">連接後，新增的紀錄會自動同步備份到你的 Google 試算表（刪除紀錄僅會從本機畫面移除）。</p>
 
-    <!-- Google 雲端連線狀態 -->
-    <div class="auth-bar">
-        <div class="auth-status">
-            <span class="dot" id="statusDot"></span>
-            <span id="statusText">未授權雲端硬碟</span>
-        </div>
-        <button class="btn-auth" id="authBtn" onclick="handleAuth()">G 授權</button>
+  <button class="btn standard-trigger-btn" id="openStandardBtn">📏 血壓 / 心跳標準對照</button>
+
+  <div id="monitor" class="monitor">
+    <div class="monitor-top">
+      <span class="monitor-label">最新量測<span class="today-badge" id="todayBadge"></span></span>
+      <span class="monitor-time" id="monitorTime">—</span>
     </div>
+    <div id="monitorBody"></div>
+  </div>
 
-    <!-- 成人血壓 & 心跳標準對照 -->
-    <div class="card">
-        <div class="section-title">✏️ 成人血壓標準對照</div>
-        <table class="ref-table">
-            <tr><td><span class="dot-ref" style="background:#68d391;"></span>正常</td><td>&lt;120 / &lt;80</td></tr>
-            <tr><td><span class="dot-ref" style="background:#f6ad55;"></span>血壓偏高</td><td>120–129 / &lt;80</td></tr>
-            <tr><td><span class="dot-ref" style="background:#ed8936;"></span>高血壓第一期</td><td>130–139 / 80–89</td></tr>
-            <tr><td><span class="dot-ref" style="background:#e53e3e;"></span>高血壓第二期</td><td>≥140 / ≥90</td></tr>
-            <tr><td><span class="dot-ref" style="background:#9b2c2c;"></span>高血壓危象</td><td>&gt;180 / &gt;120</td></tr>
-        </table>
-
-        <div class="section-title" style="margin-top: 14px;">💙 心跳標準對照 (休息時)</div>
-        <table class="ref-table">
-            <tr><td><span class="dot-ref" style="background:#f6ad55;"></span>心跳過低</td><td>&lt;60 bpm</td></tr>
-            <tr><td><span class="dot-ref" style="background:#68d391;"></span>正常</td><td>60–100 bpm</td></tr>
-            <tr><td><span class="dot-ref" style="background:#e53e3e;"></span>心跳過高</td><td>&gt;100 bpm</td></tr>
-        </table>
+  <div class="summary" id="summary" style="display:none;">
+    <div class="stat">
+      <div class="k">7 日平均血壓</div>
+      <div class="v" id="avgBp">—</div>
     </div>
-
-    <!-- 最新量測卡片 -->
-    <div class="stats-card">
-        <div class="stats-header">
-            <span>最新量測</span>
-            <span class="badge-count" id="todayCount">🗓️ 今日 0 次</span>
-        </div>
-        <div class="stats-empty" id="latestText">還沒有紀錄呦～新增第一筆量測開始追蹤吧 ☁️</div>
+    <div class="stat">
+      <div class="k">7 日平均心跳</div>
+      <div class="v" id="avgPulse">—</div>
     </div>
-
-    <!-- 新增紀錄 -->
-    <div class="card">
-        <div class="section-title">☁️ 新增紀錄</div>
-        <div class="form-row">
-            <div class="form-col">
-                <label>日期</label>
-                <input type="date" id="inputDate">
-            </div>
-            <div class="form-col">
-                <label>時間</label>
-                <input type="time" id="inputTime">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-col-3">
-                <label>收縮壓</label>
-                <input type="number" id="sys">
-            </div>
-            <div class="form-col-3">
-                <label>舒張壓</label>
-                <input type="number" id="dia">
-            </div>
-            <div class="form-col-3">
-                <label>心跳</label>
-                <input type="number" id="pulse">
-            </div>
-        </div>
-        <button class="btn-add" id="saveBtn" onclick="saveData()">🧬 新增紀錄</button>
+    <div class="stat">
+      <div class="k">紀錄筆數</div>
+      <div class="v" id="totalCount">—</div>
     </div>
+  </div>
 
-    <!-- 歷史紀錄 -->
-    <div>
-        <div class="section-title" style="padding-left: 4px;">📓 歷史紀錄</div>
-        <div class="card" style="padding: 12px 16px;">
-            <div id="historyContainer">
-                <div class="history-box">
-                    <p>還沒有任何紀錄 ☁️</p>
-                    <p style="font-size: 0.78rem; margin-top: 4px;">填寫上方表單新增第一筆血壓量測吧</p>
-                </div>
-            </div>
-        </div>
+  <div class="card">
+    <h2>☁️ 新增紀錄</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="dateInput">日期</label>
+        <input type="date" id="dateInput">
+      </div>
+      <div class="field">
+        <label for="timeInput">時間</label>
+        <input type="time" id="timeInput">
+      </div>
     </div>
+    <div class="grid three" style="margin-top:14px;">
+      <div class="field">
+        <label for="sysInput">收縮壓 (mmHg)</label>
+        <input type="number" id="sysInput" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="diaInput">舒張壓 (mmHg)</label>
+        <input type="number" id="diaInput" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="pulseInput">心跳 (bpm)</label>
+        <input type="number" id="pulseInput" inputmode="numeric">
+      </div>
+    </div>
+    <p class="error-msg" id="errorMsg"></p>
+    <button class="btn" id="addBtn">🫧 新增紀錄</button>
+  </div>
 
-    <!-- 查看血壓趨勢圖按鈕 -->
-    <button class="btn-trend" onclick="openTrendChart()">📈 查看血壓趨勢圖</button>
+  <div class="history">
+    <h2>📔 歷史紀錄</h2>
+    <div id="historyList"></div>
+  </div>
+
+  <button class="btn chart-trigger-btn" id="openChartBtn">📈 查看血壓趨勢圖</button>
+
 </div>
 
-<!-- 趨勢圖 Modal 視窗 -->
-<div class="modal-overlay" id="chartModal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <div class="modal-title">📈 血壓趨勢分析</div>
-            <button class="btn-close" onclick="closeTrendChart()">✕</button>
-        </div>
-
-        <!-- 切換區間頁籤 -->
-        <div class="filter-tabs">
-            <button class="tab-btn active" onclick="switchPeriod('1D', event)">每日</button>
-            <button class="tab-btn" onclick="switchPeriod('7D', event)">7日</button>
-            <button class="tab-btn" onclick="switchPeriod('30D', event)">30日</button>
-            <button class="tab-btn" onclick="switchPeriod('6M', event)">6個月</button>
-            <button class="tab-btn" onclick="switchPeriod('1Y', event)">1年</button>
-            <button class="tab-btn" onclick="switchPeriod('ALL', event)">全部</button>
-        </div>
-
-        <canvas id="bpChart" height="220"></canvas>
+<div class="modal-overlay" id="standardOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>📏 標準對照</h2>
+      <button class="modal-close" id="closeStandardBtn" title="關閉">✕</button>
     </div>
+    <div class="legend-title">📏 成人血壓標準對照</div>
+    <div class="legend-rows">
+      <div class="legend-row"><span class="dot" style="background:var(--mint);"></span>正常<span class="range">&lt;120 / &lt;80</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--honey);"></span>血壓偏高<span class="range">120–129 / &lt;80</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--peach);"></span>高血壓第一期<span class="range">130–139 / 80–89</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--rose);"></span>高血壓第二期<span class="range">≥140 / ≥90</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--crimson);"></span>高血壓危象<span class="range">&gt;180 / &gt;120</span></div>
+    </div>
+    <div class="legend-title" style="margin-top:14px;">💙 心跳標準對照（休息時）</div>
+    <div class="legend-rows">
+      <div class="legend-row"><span class="dot" style="background:var(--honey);"></span>心跳過低<span class="range">&lt;60 bpm</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--mint);"></span>正常<span class="range">60–100 bpm</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--rose);"></span>心跳過高<span class="range">&gt;100 bpm</span></div>
+    </div>
+  </div>
 </div>
 
+<div class="modal-overlay" id="chartOverlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>📈 趨勢圖</h2>
+      <button class="modal-close" id="closeChartBtn" title="關閉">✕</button>
+    </div>
+    <div class="range-tabs" id="rangeTabs">
+      <button class="range-tab" data-range="day">每日</button>
+      <button class="range-tab active" data-range="7d">7 日</button>
+      <button class="range-tab" data-range="30d">30 日</button>
+      <button class="range-tab" data-range="6m">6 個月</button>
+      <button class="range-tab" data-range="1y">1 年</button>
+      <button class="range-tab" data-range="all">整體</button>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+      <canvas id="trendChart"></canvas>
+    </div>
+    <div class="chart-empty" id="chartEmpty" style="display:none;">這個範圍內還沒有紀錄 ☁️</div>
+    <div class="chart-legend">
+      <span><i style="background:var(--accent-deep);"></i>收縮壓</span>
+      <span><i style="background:#6FB8D9;"></i>舒張壓</span>
+      <span><i style="background:var(--rose);"></i>心跳</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
-    const CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+(function(){
+  const STORAGE_KEY = 'bp:records';
+  let records = [];
+  let currentRange = '7d';
+  let trendChart = null;
 
-    let tokenClient;
-    let accessToken = null;
-    let spreadsheetId = null;
-    let sheetName = 'Sheet1'; // 動態抓取第一頁名稱
-    let cachedRows = [];
-    let chartInstance = null;
-    let currentRange = '7D';
+  // --- Google 雲端同步（Google Identity Services + Sheets API）---
+  const GOOGLE_CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
+  const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+  const SHEET_FILE_NAME = '寶總血壓紀錄表';
+  let tokenClient = null;
+  let accessToken = null;
+  let spreadsheetId = null;
+  let sheetName = 'Sheet1';
 
-    window.onload = () => {
-        const now = new Date();
-        document.getElementById('inputDate').value = now.toISOString().split('T')[0];
-        document.getElementById('inputTime').value = now.toTimeString().slice(0, 5);
+  const $ = id => document.getElementById(id);
+  const dateInput = $('dateInput'), timeInput = $('timeInput'),
+        sysInput = $('sysInput'), diaInput = $('diaInput'), pulseInput = $('pulseInput'),
+        errorMsg = $('errorMsg'), addBtn = $('addBtn'),
+        historyList = $('historyList'), monitorBody = $('monitorBody'), monitorTime = $('monitorTime'),
+        summary = $('summary'), avgBp = $('avgBp'), avgPulse = $('avgPulse'), totalCount = $('totalCount'),
+        rangeTabs = $('rangeTabs'), chartEmpty = $('chartEmpty'), chartWrap = $('chartWrap'),
+        chartOverlay = $('chartOverlay'), openChartBtn = $('openChartBtn'), closeChartBtn = $('closeChartBtn'),
+        standardOverlay = $('standardOverlay'), openStandardBtn = $('openStandardBtn'), closeStandardBtn = $('closeStandardBtn'),
+        statusDot = $('statusDot'), statusText = $('statusText'), authBtn = $('authBtn');
 
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: async (response) => {
-                if (response.error !== undefined) {
-                    throw (response);
-                }
-                accessToken = response.access_token;
-                document.getElementById('statusDot').classList.add('active');
-                document.getElementById('statusText').innerText = '已連線至個人的雲端硬碟！';
-                document.getElementById('authBtn').innerText = '已授權';
+  function openChartModal(){
+    chartOverlay.classList.add('open');
+    renderChart();
+  }
+  function closeChartModal(){
+    chartOverlay.classList.remove('open');
+  }
+  openChartBtn.addEventListener('click', openChartModal);
+  closeChartBtn.addEventListener('click', closeChartModal);
+  chartOverlay.addEventListener('click', (e)=>{
+    if(e.target === chartOverlay) closeChartModal();
+  });
 
-                await initSheetAndLoadData();
-            },
+  function openStandardModal(){ standardOverlay.classList.add('open'); }
+  function closeStandardModal(){ standardOverlay.classList.remove('open'); }
+  openStandardBtn.addEventListener('click', openStandardModal);
+  closeStandardBtn.addEventListener('click', closeStandardModal);
+  standardOverlay.addEventListener('click', (e)=>{
+    if(e.target === standardOverlay) closeStandardModal();
+  });
+
+  rangeTabs.querySelectorAll('.range-tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      rangeTabs.querySelectorAll('.range-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentRange = btn.dataset.range;
+      renderChart();
+    });
+  });
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function nowDefaults(){
+    const d = new Date();
+    dateInput.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    timeInput.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  dateInput.addEventListener('change', ()=>{ timeInput.focus(); });
+  timeInput.addEventListener('change', ()=>{ sysInput.focus(); });
+
+  // --- Google 雲端同步邏輯 ---
+  function setAuthUI(connected, label){
+    statusDot.classList.toggle('active', connected);
+    statusText.textContent = label;
+    authBtn.textContent = connected ? '✅ 已連接' : '連接 Google';
+    authBtn.classList.toggle('connected', connected);
+  }
+
+  function initGoogleAuthClient(){
+    if(typeof google === 'undefined' || !google.accounts){
+      // Google 腳本尚未載入完成，稍後重試
+      setTimeout(initGoogleAuthClient, 300);
+      return;
+    }
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GOOGLE_SCOPES,
+      callback: async (response)=>{
+        if(response.error){
+          setAuthUI(false, '授權失敗，請再試一次');
+          return;
+        }
+        accessToken = response.access_token;
+        setAuthUI(true, '連線中，正在同步試算表…');
+        await initSheetAndLoadData();
+      }
+    });
+  }
+
+  function handleAuth(){
+    if(!tokenClient){
+      setAuthUI(false, 'Google 服務尚未就緒，請稍候再試');
+      return;
+    }
+    tokenClient.requestAccessToken({ prompt: '' });
+  }
+
+  async function initSheetAndLoadData(){
+    try{
+      const query = `name = '${SHEET_FILE_NAME}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
+        headers:{ Authorization:`Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+
+      if(data.files && data.files.length > 0){
+        spreadsheetId = data.files[0].id;
+        const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+          headers:{ Authorization:`Bearer ${accessToken}` }
         });
+        const meta = await metaRes.json();
+        if(meta.sheets && meta.sheets.length > 0){
+          sheetName = meta.sheets[0].properties.title;
+        }
+      } else {
+        const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+          method:'POST',
+          headers:{ Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            properties:{ title: SHEET_FILE_NAME },
+            sheets:[{
+              properties:{ title:'Sheet1' },
+              data:[{
+                startRow:0, startColumn:0,
+                rowData:[{
+                  values:[
+                    { userEnteredValue:{ stringValue:'日期' } },
+                    { userEnteredValue:{ stringValue:'時間' } },
+                    { userEnteredValue:{ stringValue:'收縮壓' } },
+                    { userEnteredValue:{ stringValue:'舒張壓' } },
+                    { userEnteredValue:{ stringValue:'心跳' } }
+                  ]
+                }]
+              }]
+            }]
+          })
+        });
+        const newSheet = await createRes.json();
+        spreadsheetId = newSheet.spreadsheetId;
+        sheetName = 'Sheet1';
+      }
+
+      await loadDataFromSheet();
+    }catch(err){
+      console.error('雲端試算表初始化失敗', err);
+      setAuthUI(true, '雲端初始化失敗，請重新連接');
+    }
+  }
+
+  async function loadDataFromSheet(){
+    try{
+      const encodedSheetName = encodeURIComponent(sheetName);
+      const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A2:E1000`;
+      const res = await fetch(readUrl, { headers:{ Authorization:`Bearer ${accessToken}` } });
+      const data = await res.json();
+
+      if(data.values && data.values.length > 0){
+        records = data.values
+          .filter(row => row[0] && row[1] && row[2] && row[3] && row[4])
+          .map((row, i) => ({
+            id: `sheet-${i}-${row[0]}-${row[1]}`,
+            date: row[0], time: row[1],
+            sys: Number(row[2]), dia: Number(row[3]), pulse: Number(row[4])
+          }));
+      } else {
+        records = [];
+      }
+      renderAll();
+      await saveRecords();
+      setAuthUI(true, '✅ 已連接你的 Google 試算表');
+    }catch(err){
+      console.error('讀取雲端試算表失敗', err);
+      setAuthUI(true, '讀取雲端資料失敗');
+    }
+  }
+
+  async function appendToSheet(record){
+    if(!accessToken || !spreadsheetId) return;
+    try{
+      const encodedSheetName = encodeURIComponent(sheetName);
+      const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A:E:append?valueInputOption=USER_ENTERED`;
+      const res = await fetch(appendUrl, {
+        method:'POST',
+        headers:{ Authorization:`Bearer ${accessToken}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ values:[[record.date, record.time, record.sys, record.dia, record.pulse]] })
+      });
+      if(!res.ok){
+        const resData = await res.json();
+        console.error('寫入雲端失敗', resData);
+        showError('已存在本機，但同步到 Google 試算表失敗，請檢查連線或重新授權');
+      }
+    }catch(err){
+      console.error('寫入雲端發生錯誤', err);
+      showError('已存在本機，但同步到 Google 試算表時發生網路錯誤');
+    }
+  }
+
+  authBtn.addEventListener('click', handleAuth);
+  window.addEventListener('load', initGoogleAuthClient);
+
+  function classify(sys, dia){
+    if(sys >= 180 || dia >= 120) return {label:'高血壓危象', key:'crisis'};
+    if(sys >= 140 || dia >= 90) return {label:'高血壓第二期', key:'stage2'};
+    if(sys >= 130 || dia >= 80) return {label:'高血壓第一期', key:'stage1'};
+    if(sys >= 120 && dia < 80) return {label:'血壓偏高', key:'elevated'};
+    return {label:'正常', key:'normal'};
+  }
+
+  function classifyPulse(pulse){
+    if(pulse < 60) return {label:'心跳過低', key:'low'};
+    if(pulse > 100) return {label:'心跳過高', key:'high'};
+    return {label:'心跳正常', key:'normal'};
+  }
+
+  const colorMap = {
+    normal:{fg:'var(--mint)', bg:'var(--mint-bg)'},
+    elevated:{fg:'var(--honey)', bg:'var(--honey-bg)'},
+    stage1:{fg:'var(--peach)', bg:'var(--peach-bg)'},
+    stage2:{fg:'var(--rose)', bg:'var(--rose-bg)'},
+    crisis:{fg:'var(--crimson)', bg:'var(--crimson-bg)'},
+  };
+
+  const pulseColorMap = {
+    normal:{fg:'var(--mint)', bg:'var(--mint-bg)'},
+    low:{fg:'var(--honey)', bg:'var(--honey-bg)'},
+    high:{fg:'var(--rose)', bg:'var(--rose-bg)'},
+  };
+
+  function fmtDateLabel(dateStr){
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(dateStr + 'T00:00:00');
+    const diffDays = Math.round((today - d) / 86400000);
+    const weekday = ['週日','週一','週二','週三','週四','週五','週六'][d.getDay()];
+    const md = `${d.getMonth()+1}/${d.getDate()}`;
+    if(diffDays === 0) return `今天 · ${md}`;
+    if(diffDays === 1) return `昨天 · ${md}`;
+    return `${md}（${weekday}）`;
+  }
+
+  function todayStr(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  function renderMonitor(){
+    const monitorEl = document.getElementById('monitor');
+    const todayCount = records.filter(r => r.date === todayStr()).length;
+    const todayBadge = document.getElementById('todayBadge');
+    todayBadge.textContent = `📅 今日 ${todayCount} 次`;
+    if(records.length === 0){
+      monitorTime.textContent = '—';
+      monitorEl.classList.remove('is-alert');
+      monitorBody.innerHTML = `<div class="empty-monitor">還沒有紀錄呦～新增第一筆量測開始追蹤吧 ☁️</div>`;
+      return;
+    }
+    const sorted = [...records].sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+    const latest = sorted[0];
+    const c = classify(latest.sys, latest.dia);
+    const col = colorMap[c.key];
+    const pc = classifyPulse(latest.pulse);
+    const pcol = pulseColorMap[pc.key];
+    const bpAlert = c.key !== 'normal';
+    const pulseAlert = pc.key !== 'normal';
+    const isAlert = bpAlert || pulseAlert;
+    const icon = c.key === 'crisis' ? '🚨 ' : (bpAlert ? '⚠️ ' : '');
+    const pulseIcon = pulseAlert ? '⚠️ ' : '';
+    monitorTime.textContent = `${latest.date} ${latest.time}`;
+    monitorEl.classList.toggle('is-alert', isAlert);
+    monitorEl.style.setProperty('--alert-color', bpAlert ? col.fg : pcol.fg);
+    monitorBody.innerHTML = `
+      <div class="monitor-body">
+        <div class="bp-reading">
+          <span class="sys">${latest.sys}</span><span class="slash">/</span><span class="dia">${latest.dia}</span>
+          <span class="bp-unit">mmHg</span>
+        </div>
+        <div class="pulse-block">
+          <span class="pulse-heart">💙</span>
+          <span class="pulse-num">${latest.pulse}</span>
+          <span class="bp-unit">bpm</span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-pill ${bpAlert ? 'is-alert' : ''}" style="color:${col.fg}; background:${col.bg};">
+          <span class="dot" style="background:${col.fg};"></span>${icon}${c.label}
+        </span>
+        <span class="status-pill ${pulseAlert ? 'is-alert' : ''}" style="color:${pcol.fg}; background:${pcol.bg};">
+          <span class="dot" style="background:${pcol.fg};"></span>${pulseIcon}${pc.label}
+        </span>
+      </div>
+      ${c.key === 'crisis' ? `<div class="alert-note">🚨 血壓已達高血壓危象範圍，建議儘快就醫確認</div>` : ''}
+      ${pc.key === 'low' ? `<div class="alert-note" style="color:var(--honey);">⚠️ 心跳偏低，若伴隨頭暈或不適請留意</div>` : ''}
+      ${pc.key === 'high' ? `<div class="alert-note" style="color:var(--rose);">⚠️ 心跳偏高，若非運動後建議留意觀察</div>` : ''}
+      ${todayCount === 0 ? `<div class="reminder-note">🔔 今天還沒有量血壓紀錄，記得抽空量一下唷</div>` : ''}
+    `;
+  }
+
+  function renderSummary(){
+    if(records.length === 0){ summary.style.display='none'; return; }
+    summary.style.display='flex';
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
+    const recent = records.filter(r => new Date(r.date+'T'+r.time) >= cutoff);
+    const pool = recent.length ? recent : records;
+    const avgSys = Math.round(pool.reduce((s,r)=>s+r.sys,0)/pool.length);
+    const avgDia = Math.round(pool.reduce((s,r)=>s+r.dia,0)/pool.length);
+    const avgP = Math.round(pool.reduce((s,r)=>s+r.pulse,0)/pool.length);
+    avgBp.textContent = `${avgSys}/${avgDia}`;
+    avgPulse.textContent = `${avgP}`;
+    totalCount.textContent = `${records.length}`;
+  }
+
+  function renderHistory(){
+    if(records.length === 0){
+      historyList.innerHTML = `<div class="empty-state">還沒有任何紀錄 ☁️<br>填寫上方表單新增第一筆血壓量測吧</div>`;
+      return;
+    }
+    const sorted = [...records].sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+    const groups = {};
+    sorted.forEach(r=>{
+      if(!groups[r.date]) groups[r.date] = [];
+      groups[r.date].push(r);
+    });
+    let html = '';
+    Object.keys(groups).sort().reverse().forEach(date=>{
+      html += `<div class="day-group"><div class="day-label">${fmtDateLabel(date)}</div>`;
+      groups[date].forEach(r=>{
+        const c = classify(r.sys, r.dia);
+        const col = colorMap[c.key];
+        const pc = classifyPulse(r.pulse);
+        const pcol = pulseColorMap[pc.key];
+        const bpAlert = c.key !== 'normal';
+        const pulseAlert = pc.key !== 'normal';
+        const isAlert = bpAlert || pulseAlert;
+        const icon = c.key === 'crisis' ? '🚨 ' : (bpAlert ? '⚠️ ' : '');
+        const alertColor = bpAlert ? col.fg : (pulseAlert ? pcol.fg : '');
+        html += `
+          <div class="record ${isAlert ? 'is-alert' : ''}" style="${isAlert ? `--alert-color:${alertColor};` : ''}">
+            <div class="record-left">
+              <span class="record-time">${r.time}</span>
+              <span class="record-nums">${r.sys}/${r.dia}<span class="u">mmHg</span></span>
+              <span class="record-pulse">💙 ${r.pulse}<span class="u">bpm</span>${pulseAlert ? ` <span class="tag" style="color:${pcol.fg}; background:${pcol.bg};">⚠️ ${pc.label}</span>` : ''}</span>
+            </div>
+            <div class="record-right">
+              <span class="tag" style="color:${col.fg}; background:${col.bg};">${icon}${c.label}</span>
+              <button class="del-btn" data-id="${r.id}" title="刪除">✕</button>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    });
+    historyList.innerHTML = html;
+    historyList.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteRecord(btn.dataset.id));
+    });
+  }
+
+  function getRangeRecords(range){
+    const sorted = [...records].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+    if(range === 'all') return sorted;
+    const now = new Date();
+    if(range === 'day'){
+      const today = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+      return sorted.filter(r => r.date === today);
+    }
+    const cutoff = new Date();
+    if(range === '7d') cutoff.setDate(cutoff.getDate()-7);
+    else if(range === '30d') cutoff.setDate(cutoff.getDate()-30);
+    else if(range === '6m') cutoff.setMonth(cutoff.getMonth()-6);
+    else if(range === '1y') cutoff.setFullYear(cutoff.getFullYear()-1);
+    return sorted.filter(r => new Date(r.date+'T'+r.time) >= cutoff);
+  }
+
+  function formatChartLabel(r, range){
+    const d = new Date(r.date+'T'+r.time);
+    if(range === 'day') return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    if(range === '6m' || range === '1y' || range === 'all') return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  }
+
+  function renderChart(){
+    const data = getRangeRecords(currentRange);
+    if(data.length === 0){
+      chartWrap.style.display = 'none';
+      chartEmpty.style.display = 'block';
+      if(trendChart){ trendChart.destroy(); trendChart = null; }
+      return;
+    }
+    chartWrap.style.display = 'block';
+    chartEmpty.style.display = 'none';
+
+    const labels = data.map(r => formatChartLabel(r, currentRange));
+    const sysData = data.map(r => r.sys);
+    const diaData = data.map(r => r.dia);
+    const pulseData = data.map(r => r.pulse);
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if(trendChart){ trendChart.destroy(); }
+
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label:'收縮壓', data: sysData, borderColor:'#4CA0CB', backgroundColor:'#4CA0CB',
+            yAxisID:'y', tension:0.3, pointRadius:3, borderWidth:2
+          },
+          {
+            label:'舒張壓', data: diaData, borderColor:'#6FB8D9', backgroundColor:'#6FB8D9',
+            yAxisID:'y', tension:0.3, pointRadius:3, borderWidth:2
+          },
+          {
+            label:'心跳', data: pulseData, borderColor:'#D9628A', backgroundColor:'#D9628A',
+            yAxisID:'y1', tension:0.3, pointRadius:3, borderWidth:2, borderDash:[4,3]
+          }
+        ]
+      },
+      options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'#FFFFFF', titleColor:'#3A5568', bodyColor:'#3A5568',
+            borderColor:'#DDEFF8', borderWidth:1, padding:10
+          }
+        },
+        scales:{
+          x:{ grid:{ display:false }, ticks:{ color:'#93AEC0', font:{ size:11 }, maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
+          y:{
+            position:'left', suggestedMin:40, suggestedMax:200,
+            title:{ display:true, text:'mmHg', color:'#93AEC0', font:{ size:11 } },
+            grid:{ color:'#EFF9FD' }, ticks:{ color:'#93AEC0', font:{ size:11 } }
+          },
+          y1:{
+            position:'right', suggestedMin:40, suggestedMax:160,
+            title:{ display:true, text:'bpm', color:'#93AEC0', font:{ size:11 } },
+            grid:{ display:false }, ticks:{ color:'#93AEC0', font:{ size:11 } }
+          }
+        }
+      }
+    });
+  }
+
+  function renderAll(){
+    renderMonitor();
+    renderSummary();
+    renderHistory();
+    if(chartOverlay.classList.contains('open')) renderChart();
+  }
+
+  async function loadRecords(){
+    try{
+      const result = await window.storage.get(STORAGE_KEY, false);
+      records = result ? JSON.parse(result.value) : [];
+    }catch(e){
+      records = [];
+    }
+    renderAll();
+  }
+
+  async function saveRecords(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(records), false);
+    }catch(e){
+      console.error('儲存失敗', e);
+    }
+  }
+
+  function showError(msg){
+    errorMsg.textContent = msg;
+    errorMsg.style.display = 'block';
+  }
+  function clearError(){
+    errorMsg.style.display = 'none';
+  }
+
+  async function deleteRecord(id){
+    records = records.filter(r => r.id !== id);
+    renderAll();
+    await saveRecords();
+  }
+
+  addBtn.addEventListener('click', async ()=>{
+    clearError();
+    const date = dateInput.value;
+    const time = timeInput.value;
+    const sys = parseInt(sysInput.value, 10);
+    const dia = parseInt(diaInput.value, 10);
+    const pulse = parseInt(pulseInput.value, 10);
+
+    if(!date || !time){ showError('請填寫日期與時間唷'); return; }
+    if(!sys || !dia || !pulse){ showError('請完整填寫收縮壓、舒張壓與心跳'); return; }
+    if(sys < 50 || sys > 260){ showError('收縮壓數值看起來不太合理，請確認'); return; }
+    if(dia < 30 || dia > 200){ showError('舒張壓數值看起來不太合理，請確認'); return; }
+    if(pulse < 30 || pulse > 220){ showError('心跳數值看起來不太合理，請確認'); return; }
+    if(dia >= sys){ showError('舒張壓通常應小於收縮壓，請確認輸入'); return; }
+
+    const record = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      date, time, sys, dia, pulse
     };
+    records.push(record);
+    renderAll();
+    await saveRecords();
+    if(accessToken && spreadsheetId){ appendToSheet(record); }
 
-    function handleAuth() {
-        tokenClient.requestAccessToken({prompt: ''});
-    }
+    sysInput.value = '';
+    diaInput.value = '';
+    pulseInput.value = '';
+    nowDefaults();
+    sysInput.focus();
+  });
 
-    async function initSheetAndLoadData() {
-        try {
-            let query = "name = '血壓紀錄表' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false";
-            let res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            let data = await res.json();
-
-            if (data.files && data.files.length > 0) {
-                spreadsheetId = data.files[0].id;
-                // 取得試算表資訊，確認第一個 Sheet 的名稱
-                let sheetMetaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-                let sheetMeta = await sheetMetaRes.json();
-                if (sheetMeta.sheets && sheetMeta.sheets.length > 0) {
-                    sheetName = sheetMeta.sheets[0].properties.title;
-                }
-            } else {
-                // 自動建立試算表
-                let createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-                    method: 'POST',
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        properties: { title: '血壓紀錄表' },
-                        sheets: [{
-                            properties: { title: 'Sheet1' },
-                            data: [{
-                                startRow: 0,
-                                startColumn: 0,
-                                rowData: [{
-                                    values: [
-                                        { userEnteredValue: { stringValue: '日期' } },
-                                        { userEnteredValue: { stringValue: '時間' } },
-                                        { userEnteredValue: { stringValue: '收縮壓' } },
-                                        { userEnteredValue: { stringValue: '舒張壓' } },
-                                        { userEnteredValue: { stringValue: '心跳' } }
-                                    ]
-                                }]
-                            }]
-                        }]
-                    })
-                });
-                let newSheet = await createRes.json();
-                spreadsheetId = newSheet.spreadsheetId;
-                sheetName = 'Sheet1';
-            }
-
-            await loadDataFromSheet();
-        } catch (err) {
-            console.error("雲端檔案載入失敗:", err);
-            alert("初始化雲端試算表失敗，請重新連線與授權");
-        }
-    }
-
-    async function saveData() {
-        if (!accessToken || !spreadsheetId) {
-            alert('請先點擊上方「G 授權」登入 Google 帳號！');
-            return;
-        }
-
-        const date = document.getElementById('inputDate').value;
-        const time = document.getElementById('inputTime').value;
-        const sys = document.getElementById('sys').value;
-        const dia = document.getElementById('dia').value;
-        const pulse = document.getElementById('pulse').value;
-
-        if (!sys || !dia || !pulse) {
-            alert('請完整填寫收縮壓、舒張壓與心跳！');
-            return;
-        }
-
-        const saveBtn = document.getElementById('saveBtn');
-        saveBtn.innerText = '寫入中...';
-        saveBtn.disabled = true;
-
-        try {
-            const encodedSheetName = encodeURIComponent(sheetName);
-            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A:E:append?valueInputOption=USER_ENTERED`;
-            
-            const res = await fetch(appendUrl, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    values: [[date, time, sys, dia, pulse]]
-                })
-            });
-
-            const resData = await res.json();
-
-            if (res.ok) {
-                document.getElementById('sys').value = '';
-                document.getElementById('dia').value = '';
-                document.getElementById('pulse').value = '';
-                await loadDataFromSheet();
-            } else {
-                console.error("寫入錯誤回應:", resData);
-                // 提示使用者具體原因
-                if (resData.error && resData.error.status === 'PERMISSION_DENIED') {
-                    alert('權限不足：請嘗試先將雲端硬碟中的「血壓紀錄表」刪除，再回到此網頁重新按「G 授權」寫入。');
-                } else {
-                    alert('寫入雲端失敗：' + (resData.error ? resData.error.message : '請重新嘗試'));
-                }
-            }
-        } catch (err) {
-            console.error(err);
-            alert('發生網路錯誤，請檢查網路連線！');
-        } finally {
-            saveBtn.innerText = '🧬 新增紀錄';
-            saveBtn.disabled = false;
-        }
-    }
-
-    async function loadDataFromSheet() {
-        try {
-            const encodedSheetName = encodeURIComponent(sheetName);
-            const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodedSheetName}!A2:E1000`;
-            const res = await fetch(readUrl, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            const data = await res.json();
-
-            const historyContainer = document.getElementById('historyContainer');
-            const todayCountElem = document.getElementById('todayCount');
-            const latestTextElem = document.getElementById('latestText');
-
-            if (data.values && data.values.length > 0) {
-                cachedRows = data.values;
-                const rows = data.values;
-                const todayStr = new Date().toISOString().split('T')[0];
-
-                const todayRecords = rows.filter(r => r[0] === todayStr);
-                todayCountElem.innerText = `🗓️ 今日 ${todayRecords.length} 次`;
-
-                const last = rows[rows.length - 1];
-                latestTextElem.innerText = `最新：${last[0]} ${last[1]} | 收縮壓 ${last[2]} / 舒張壓 ${last[3]} / 心跳 ${last[4]}`;
-
-                let tableHtml = `
-                    <table class="history-list-table">
-                        <thead>
-                            <tr>
-                                <th>時間</th>
-                                <th>收縮壓</th>
-                                <th>舒張壓</th>
-                                <th>心跳</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                [...rows].reverse().forEach(row => {
-                    tableHtml += `
-                        <tr>
-                            <td>${row[0]} ${row[1]}</td>
-                            <td><strong>${row[2]}</strong></td>
-                            <td><strong>${row[3]}</strong></td>
-                            <td>${row[4]}</td>
-                        </tr>
-                    `;
-                });
-
-                tableHtml += `</tbody></table>`;
-                historyContainer.innerHTML = tableHtml;
-            } else {
-                cachedRows = [];
-                todayCountElem.innerText = `🗓️ 今日 0 次`;
-                latestTextElem.innerText = `還沒有紀錄呦～新增第一筆量測開始追蹤吧 ☁️`;
-                historyContainer.innerHTML = `
-                    <div class="history-box">
-                        <p>還沒有任何紀錄 ☁️</p>
-                        <p style="font-size: 0.78rem; margin-top: 4px;">填寫上方表單新增第一筆血壓量測吧</p>
-                    </div>
-                `;
-            }
-        } catch (err) {
-            console.error("讀取歷史資料錯誤:", err);
-        }
-    }
-
-    function openTrendChart() {
-        if (cachedRows.length === 0) {
-            alert("目前尚無量測紀錄，請先新增數據！");
-            return;
-        }
-
-        document.getElementById('chartModal').style.display = 'flex';
-        renderChartByRange(currentRange);
-    }
-
-    function switchPeriod(range, evt) {
-        currentRange = range;
-        const btns = document.querySelectorAll('.tab-btn');
-        btns.forEach(btn => btn.classList.remove('active'));
-        if (evt && evt.target) {
-            evt.target.classList.add('active');
-        }
-
-        renderChartByRange(range);
-    }
-
-    function renderChartByRange(range) {
-        if (cachedRows.length === 0) return;
-
-        const now = new Date();
-        let filteredData = [];
-
-        filteredData = cachedRows.filter(r => {
-            const itemDate = new Date(`${r[0]}T${r[1]}`);
-            if (isNaN(itemDate)) return false;
-
-            if (range === '1D') {
-                return r[0] === now.toISOString().split('T')[0];
-            } else if (range === '7D') {
-                const diffTime = Math.abs(now - itemDate);
-                return diffTime <= 7 * 24 * 60 * 60 * 1000;
-            } else if (range === '30D') {
-                const diffTime = Math.abs(now - itemDate);
-                return diffTime <= 30 * 24 * 60 * 60 * 1000;
-            } else if (range === '6M') {
-                const diffTime = Math.abs(now - itemDate);
-                return diffTime <= 180 * 24 * 60 * 60 * 1000;
-            } else if (range === '1Y') {
-                const diffTime = Math.abs(now - itemDate);
-                return diffTime <= 365 * 24 * 60 * 60 * 1000;
-            } else {
-                return true;
-            }
-        });
-
-        if (filteredData.length === 0) {
-            alert("此時間範圍內尚無數據！");
-            return;
-        }
-
-        const labels = filteredData.map(r => range === '1D' ? r[1] : `${r[0].slice(5)} ${r[1]}`);
-        const sysData = filteredData.map(r => Number(r[2]));
-        const diaData = filteredData.map(r => Number(r[3]));
-
-        const ctx = document.getElementById('bpChart').getContext('2d');
-
-        if (chartInstance) {
-            chartInstance.destroy();
-        }
-
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: '收縮壓 (SYS)',
-                        data: sysData,
-                        borderColor: '#e53e3e',
-                        backgroundColor: 'rgba(229, 62, 62, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    },
-                    {
-                        label: '舒張壓 (DIA)',
-                        data: diaData,
-                        borderColor: '#3182ce',
-                        backgroundColor: 'rgba(49, 130, 206, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' }
-                },
-                scales: {
-                    y: {
-                        suggestedMin: 60,
-                        suggestedMax: 160
-                    }
-                }
-            }
-        });
-    }
-
-    function closeTrendChart() {
-        document.getElementById('chartModal').style.display = 'none';
-    }
+  nowDefaults();
+  loadRecords();
+})();
 </script>
-
 </body>
 </html>
