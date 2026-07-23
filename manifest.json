@@ -1,7 +1,7 @@
 {
   "name": "阿總量血壓",
   "short_name": "阿總血壓",
-  "description": "寶總血壓紀錄 - 簡單好用的血壓追蹤工具",
+  "description": "寶總血壓紀錄",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#F2FAFF",
