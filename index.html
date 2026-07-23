@@ -537,7 +537,7 @@
 
   <header>
     <p class="eyebrow">MY VITALS DIARY</p>
-    <h1><span class="spark">⭐</span> 寶總血壓紀錄 <span class="spark" style="animation-delay:.4s;">✨</span></h1>
+    <h1><span class="spark">⭐</span> 阿總的健康日誌 <span class="spark" style="animation-delay:.4s;">✨</span></h1>
   </header>
 
   <div class="auth-bar">
@@ -863,11 +863,26 @@
 
   function handleAuth(){
     if(!tokenClient){
-      setAuthUI(false, 'Google 服務尚未就緒，請稍候再試');
+      alert('Google 雲端服務載入中，請稍等 2 秒後再試一次！');
       return;
     }
     isSilentAttempt = false;
-    tokenClient.requestAccessToken({ prompt: '' });
+    
+    // 判斷是否為 Safari 或 iOS 環境
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    try {
+      if (isIOS || isSafari) {
+        // Safari / iOS 環境：強制帶 consent 確保彈窗觸發
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      } else {
+        // Chrome / Android / 其他環境：留空即可，體驗最順暢
+        tokenClient.requestAccessToken();
+      }
+    } catch (e) {
+      alert('登入視窗被阻擋，請於瀏覽器設定中允許「快顯視窗」再試一次。');
+    }
   }
 
   async function ensureIdColumn(){
