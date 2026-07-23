@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿總量血壓</title>
+<title>阿總健康日誌</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#4CA0CB">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="阿總量血壓">
+<meta name="apple-mobile-web-app-title" content="阿總健康日誌">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -551,12 +551,22 @@
 
   <button class="btn standard-trigger-btn" id="openStandardBtn">📏 血壓 / 心跳標準對照</button>
 
+  <!-- 血壓 Monitor -->
   <div id="monitor" class="monitor">
     <div class="monitor-top">
-      <span class="monitor-label">最新量測<span class="today-badge" id="todayBadge"></span></span>
+      <span class="monitor-label">最新血壓量測<span class="today-badge" id="todayBadge"></span></span>
       <span class="monitor-time" id="monitorTime">—</span>
     </div>
     <div id="monitorBody"></div>
+  </div>
+
+  <!-- 獨立：體重/BMI Monitor -->
+  <div id="bmiMonitor" class="monitor">
+    <div class="monitor-top">
+      <span class="monitor-label">⚖️ 最新體重 / BMI 紀錄</span>
+      <span class="monitor-time" id="bmiMonitorTime">—</span>
+    </div>
+    <div id="bmiMonitorBody"></div>
   </div>
 
   <div class="summary" id="summary" style="display:none;">
@@ -574,8 +584,9 @@
     </div>
   </div>
 
+  <!-- 血壓紀錄卡片 -->
   <div class="card">
-    <h2>☁️ 新增紀錄</h2>
+    <h2>☁️ 新增血壓紀錄</h2>
     <div class="grid">
       <div class="field">
         <label for="dateInput">日期</label>
@@ -601,7 +612,28 @@
       </div>
     </div>
     <p class="error-msg" id="errorMsg"></p>
-    <button class="btn" id="addBtn">🫧 新增紀錄</button>
+    <button class="btn" id="addBtn">🫧 新增血壓紀錄</button>
+  </div>
+
+  <!-- 獨立：體重 / BMI 設定與紀錄卡片 -->
+  <div class="card">
+    <h2>⚖️ 身高設定與體重紀錄</h2>
+    <div class="grid">
+      <div class="field full">
+        <label for="heightInput">📏 我的身高 (cm) <span style="font-size:11px; font-weight:normal; color:var(--ink-soft);">只需設定一次，自動計算 BMI</span></label>
+        <input type="number" id="heightInput" placeholder="例如：170" step="0.1" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label for="bmiDateInput">日期</label>
+        <input type="date" id="bmiDateInput">
+      </div>
+      <div class="field">
+        <label for="weightInput">體重 (kg)</label>
+        <input type="number" id="weightInput" placeholder="例如：65.5" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+    <p class="error-msg" id="bmiErrorMsg"></p>
+    <button class="btn" id="addBmiBtn" style="margin-top:14px;">⚖️ 紀錄體重與 BMI</button>
   </div>
 
   <div class="history">
@@ -609,7 +641,7 @@
     <div id="historyList"></div>
   </div>
 
-  <button class="btn chart-trigger-btn" id="openChartBtn">📈 查看血壓趨勢圖</button>
+  <button class="btn chart-trigger-btn" id="openChartBtn">📈 查看健康趨勢圖</button>
 
 </div>
 
@@ -643,6 +675,14 @@
       <div class="legend-row"><span class="dot" style="background:var(--mint);"></span>正常<span class="range">60–100 bpm</span></div>
       <div class="legend-row"><span class="dot" style="background:var(--rose);"></span>心跳過高<span class="range">&gt;100 bpm</span></div>
     </div>
+    <div class="legend-title" style="margin-top:14px;">⚖️ 成人 BMI 標準對照</div>
+    <div class="legend-rows">
+      <div class="legend-row"><span class="dot" style="background:var(--honey);"></span>體重過輕<span class="range">&lt;18.5</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--mint);"></span>健康體位<span class="range">18.5–23.9</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--peach);"></span>過重<span class="range">24.0–26.9</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--rose);"></span>輕度肥胖<span class="range">27.0–29.9</span></div>
+      <div class="legend-row"><span class="dot" style="background:var(--crimson);"></span>中/重度肥胖<span class="range">≥30.0</span></div>
+    </div>
   </div>
 </div>
 
@@ -652,6 +692,13 @@
       <h2>📈 趨勢圖</h2>
       <button class="modal-close" id="closeChartBtn" title="關閉">✕</button>
     </div>
+
+    <!-- 新增：血壓/BMI 切換頁籤 -->
+    <div class="range-tabs" id="chartTypeTabs" style="border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:12px;">
+      <button class="range-tab active" data-type="bp">🩸 血壓趨勢</button>
+      <button class="range-tab" data-type="bmi">⚖️ BMI/體重趨勢</button>
+    </div>
+
     <div class="range-tabs" id="rangeTabs">
       <button class="range-tab" data-range="day">每日</button>
       <button class="range-tab active" data-range="7d">7 日</button>
@@ -664,7 +711,7 @@
       <div id="trendChart"></div>
     </div>
     <div class="chart-empty" id="chartEmpty" style="display:none;">這個範圍內還沒有紀錄 ☁️</div>
-    <div class="chart-legend">
+    <div class="chart-legend" id="chartLegend">
       <span><i style="background:var(--accent-deep);"></i>收縮壓</span>
       <span><i style="background:#6FB8D9;"></i>舒張壓</span>
       <span><i style="background:var(--rose);"></i>心跳</span>
@@ -675,8 +722,15 @@
 <script>
 (function(){
   const STORAGE_KEY = 'bp:records';
+  const BMI_STORAGE_KEY = 'bmi:records';
+  const HEIGHT_STORAGE_KEY = 'user:height';
+
   let records = [];
+  let bmiRecords = [];
+  let userHeight = 0;
+
   let currentRange = '7d';
+  let currentChartType = 'bp'; // 'bp' 或 'bmi'
 
   // --- Google 雲端同步（Google Identity Services + Sheets API）---
   const GOOGLE_CLIENT_ID = '325830752343-jviq0jtm579bdsgbplkutkmauq654iai.apps.googleusercontent.com';
@@ -699,7 +753,11 @@
         rangeTabs = $('rangeTabs'), chartEmpty = $('chartEmpty'), chartWrap = $('chartWrap'),
         chartOverlay = $('chartOverlay'), openChartBtn = $('openChartBtn'), closeChartBtn = $('closeChartBtn'),
         standardOverlay = $('standardOverlay'), openStandardBtn = $('openStandardBtn'), closeStandardBtn = $('closeStandardBtn'),
-        statusDot = $('statusDot'), statusText = $('statusText'), authBtn = $('authBtn');
+        statusDot = $('statusDot'), statusText = $('statusText'), authBtn = $('authBtn'),
+        heightInput = $('heightInput'), bmiDateInput = $('bmiDateInput'), weightInput = $('weightInput'),
+        addBmiBtn = $('addBmiBtn'), bmiErrorMsg = $('bmiErrorMsg'),
+        bmiMonitorBody = $('bmiMonitorBody'), bmiMonitorTime = $('bmiMonitorTime'),
+        chartTypeTabs = $('chartTypeTabs'), chartLegend = $('chartLegend');
 
   function openChartModal(){
     chartOverlay.classList.add('open');
@@ -722,6 +780,16 @@
     if(e.target === standardOverlay) closeStandardModal();
   });
 
+  // 切換圖表類型 (血壓 / BMI)
+  chartTypeTabs.querySelectorAll('.range-tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      chartTypeTabs.querySelectorAll('.range-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentChartType = btn.dataset.type;
+      renderChart();
+    });
+  });
+
   rangeTabs.querySelectorAll('.range-tab').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       rangeTabs.querySelectorAll('.range-tab').forEach(b=>b.classList.remove('active'));
@@ -735,6 +803,7 @@
   function nowDefaults(){
     const d = new Date();
     dateInput.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    bmiDateInput.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     timeInput.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
@@ -762,7 +831,6 @@
 
   function initGoogleAuthClient(){
     if(typeof google === 'undefined' || !google.accounts){
-      // Google 腳本尚未載入完成，稍後重試
       setTimeout(initGoogleAuthClient, 300);
       return;
     }
@@ -939,7 +1007,7 @@
           String(r[2]) === String(record.sys) && String(r[3]) === String(record.dia) && String(r[4]) === String(record.pulse)
         );
       }
-      if(idx === -1) return; // 這筆資料還沒同步到雲端，或已被移除
+      if(idx === -1) return;
 
       const delRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
         method:'POST',
@@ -964,8 +1032,6 @@
   authBtn.addEventListener('click', handleAuth);
   window.addEventListener('load', initGoogleAuthClient);
 
-  // 分頁重新變為可見時，以及每 60 秒，自動向試算表拉取最新資料
-  // （這樣若在 Google 試算表上直接編輯/刪除，本機畫面也會跟著更新）
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState === 'visible' && accessToken && spreadsheetId){
       loadDataFromSheet(true);
@@ -989,6 +1055,14 @@
     return {label:'心跳正常', key:'normal'};
   }
 
+  function classifyBmi(bmi){
+    if(bmi < 18.5) return {label:'體重過輕', key:'under'};
+    if(bmi < 24.0) return {label:'健康體位', key:'normal'};
+    if(bmi < 27.0) return {label:'體重過重', key:'over'};
+    if(bmi < 30.0) return {label:'輕度肥胖', key:'obese1'};
+    return {label:'中/重度肥胖', key:'obese2'};
+  }
+
   const colorMap = {
     normal:{fg:'var(--mint)', bg:'var(--mint-bg)'},
     elevated:{fg:'var(--honey)', bg:'var(--honey-bg)'},
@@ -1001,6 +1075,14 @@
     normal:{fg:'var(--mint)', bg:'var(--mint-bg)'},
     low:{fg:'var(--honey)', bg:'var(--honey-bg)'},
     high:{fg:'var(--rose)', bg:'var(--rose-bg)'},
+  };
+
+  const bmiColorMap = {
+    under:{fg:'var(--honey)', bg:'var(--honey-bg)'},
+    normal:{fg:'var(--mint)', bg:'var(--mint-bg)'},
+    over:{fg:'var(--peach)', bg:'var(--peach-bg)'},
+    obese1:{fg:'var(--rose)', bg:'var(--rose-bg)'},
+    obese2:{fg:'var(--crimson)', bg:'var(--crimson-bg)'},
   };
 
   function fmtDateLabel(dateStr){
@@ -1078,6 +1160,40 @@
     `;
   }
 
+  // 獨立渲染 BMI Monitor
+  function renderBmiMonitor(){
+    const el = $('bmiMonitor');
+    if(bmiRecords.length === 0){
+      bmiMonitorTime.textContent = '—';
+      bmiMonitorBody.innerHTML = `<div class="empty-monitor">尚未紀錄體重，請填寫下方卡片新增第一筆吧 ⚖️</div>`;
+      return;
+    }
+    const sorted = [...bmiRecords].sort((a,b)=> (b.date).localeCompare(a.date));
+    const latest = sorted[0];
+    const category = classifyBmi(latest.bmi);
+    const col = bmiColorMap[category.key];
+
+    bmiMonitorTime.textContent = `${latest.date}`;
+    bmiMonitorBody.innerHTML = `
+      <div class="monitor-body">
+        <div class="bp-reading">
+          <span class="sys">${latest.weight}</span>
+          <span class="bp-unit">kg</span>
+        </div>
+        <div class="pulse-block">
+          <span style="font-size:18px;">⚖️</span>
+          <span class="pulse-num">${latest.bmi}</span>
+          <span class="bp-unit">BMI</span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-pill" style="color:${col.fg}; background:${col.bg};">
+          <span class="dot" style="background:${col.fg};"></span>${category.label}
+        </span>
+      </div>
+    `;
+  }
+
   function renderSummary(){
     if(records.length === 0){ summary.style.display='none'; return; }
     summary.style.display='flex';
@@ -1141,8 +1257,13 @@
     });
   }
 
-  function getRangeRecords(range){
-    const sorted = [...records].sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  function getRangeRecords(range, dataset){
+    const pool = dataset || records;
+    const sorted = [...pool].sort((a,b)=> {
+      const tA = a.time ? a.date + a.time : a.date;
+      const tB = b.time ? b.date + b.time : b.date;
+      return tA.localeCompare(tB);
+    });
     if(range === 'all') return sorted;
     const now = new Date();
     if(range === 'day'){
@@ -1154,11 +1275,11 @@
     else if(range === '30d') cutoff.setDate(cutoff.getDate()-30);
     else if(range === '6m') cutoff.setMonth(cutoff.getMonth()-6);
     else if(range === '1y') cutoff.setFullYear(cutoff.getFullYear()-1);
-    return sorted.filter(r => new Date(r.date+'T'+r.time) >= cutoff);
+    return sorted.filter(r => new Date(r.date + (r.time ? 'T'+r.time : 'T00:00:00')) >= cutoff);
   }
 
   function formatChartLabel(r, range){
-    const d = new Date(r.date+'T'+r.time);
+    const d = new Date(r.date + (r.time ? 'T'+r.time : 'T00:00:00'));
     if(range === 'day') return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
     if(range === '6m' || range === '1y' || range === 'all') return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
     return `${d.getMonth()+1}/${d.getDate()}`;
@@ -1168,7 +1289,8 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  function buildLineChartSVG(data, range){
+  // 繪製血壓折線圖
+  function buildBpLineChartSVG(data, range){
     const width = 640, height = 260;
     const padL = 40, padR = 40, padT = 18, padB = 32;
     const plotW = width - padL - padR;
@@ -1223,20 +1345,101 @@
     `;
   }
 
-  function renderChart(){
-    const data = getRangeRecords(currentRange);
-    if(data.length === 0){
-      chartWrap.style.display = 'none';
-      chartEmpty.style.display = 'block';
-      return;
+  // 繪製 BMI/體重折線圖
+  function buildBmiLineChartSVG(data, range){
+    const width = 640, height = 260;
+    const padL = 40, padR = 40, padT = 18, padB = 32;
+    const plotW = width - padL - padR;
+    const plotH = height - padT - padB;
+    const n = data.length;
+    const xStep = n > 1 ? plotW / (n - 1) : 0;
+    const xAt = i => padL + (n > 1 ? i * xStep : plotW / 2);
+
+    const weights = data.map(r=>r.weight);
+    const bmis = data.map(r=>r.bmi);
+
+    const wMin = Math.max(30, Math.floor(Math.min(...weights) - 3));
+    const wMax = Math.ceil(Math.max(...weights) + 3);
+    const bmiMin = Math.max(10, Math.floor(Math.min(...bmis) - 2));
+    const bmiMax = Math.ceil(Math.max(...bmis) + 2);
+
+    const clampY = y => Math.max(padT, Math.min(padT + plotH, y));
+    const yW = v => clampY(padT + plotH - ((v - wMin) / (wMax - wMin || 1)) * plotH);
+    const yBmi = v => clampY(padT + plotH - ((v - bmiMin) / (bmiMax - bmiMin || 1)) * plotH);
+
+    function pathFor(values, yfn){
+      return values.map((v,i)=> `${i===0?'M':'L'} ${xAt(i).toFixed(1)} ${yfn(v).toFixed(1)}`).join(' ');
     }
-    chartWrap.style.display = 'block';
-    chartEmpty.style.display = 'none';
-    document.getElementById('trendChart').innerHTML = buildLineChartSVG(data, currentRange);
+    function pointsFor(values, yfn, color){
+      return values.map((v,i)=> `<circle cx="${xAt(i).toFixed(1)}" cy="${yfn(v).toFixed(1)}" r="3" fill="${color}"/>`).join('');
+    }
+
+    const weightPath = pathFor(weights, yW);
+    const bmiPath = pathFor(bmis, yBmi);
+
+    let gridLines = '';
+    for(let g=0; g<=4; g++){
+      const gy = padT + (plotH/4)*g;
+      gridLines += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${width-padR}" y2="${gy.toFixed(1)}" stroke="#EFF9FD" stroke-width="1"/>`;
+    }
+
+    const labelCount = Math.min(6, n);
+    let xLabels = '';
+    for(let k=0; k<labelCount; k++){
+      const idx = labelCount === 1 ? 0 : Math.round(k * (n-1) / (labelCount-1));
+      xLabels += `<text x="${xAt(idx).toFixed(1)}" y="${height-10}" font-size="10" fill="#93AEC0" text-anchor="middle">${escapeXml(formatChartLabel(data[idx], range))}</text>`;
+    }
+
+    return `
+      <svg viewBox="0 0 ${width} ${height}" width="100%" height="240" xmlns="http://www.w3.org/2000/svg" style="font-family:'Huninn',sans-serif;">
+        ${gridLines}
+        <path d="${weightPath}" fill="none" stroke="#4CA0CB" stroke-width="2.5"/>
+        <path d="${bmiPath}" fill="none" stroke="#7FC7A0" stroke-width="2.5" stroke-dasharray="6,4"/>
+        ${pointsFor(weights, yW, '#4CA0CB')}
+        ${pointsFor(bmis, yBmi, '#7FC7A0')}
+        ${xLabels}
+        <text x="${padL}" y="12" font-size="10" fill="#93AEC0">kg</text>
+        <text x="${width-padR}" y="12" font-size="10" fill="#93AEC0" text-anchor="end">BMI</text>
+      </svg>
+    `;
+  }
+
+  function renderChart(){
+    if(currentChartType === 'bp'){
+      chartLegend.innerHTML = `
+        <span><i style="background:var(--accent-deep);"></i>收縮壓</span>
+        <span><i style="background:#6FB8D9;"></i>舒張壓</span>
+        <span><i style="background:var(--rose);"></i>心跳</span>
+      `;
+      const data = getRangeRecords(currentRange, records);
+      if(data.length === 0){
+        chartWrap.style.display = 'none';
+        chartEmpty.style.display = 'block';
+        return;
+      }
+      chartWrap.style.display = 'block';
+      chartEmpty.style.display = 'none';
+      document.getElementById('trendChart').innerHTML = buildBpLineChartSVG(data, currentRange);
+    } else {
+      chartLegend.innerHTML = `
+        <span><i style="background:var(--accent-deep);"></i>體重 (kg)</span>
+        <span><i style="background:var(--mint);"></i>BMI</span>
+      `;
+      const data = getRangeRecords(currentRange, bmiRecords);
+      if(data.length === 0){
+        chartWrap.style.display = 'none';
+        chartEmpty.style.display = 'block';
+        return;
+      }
+      chartWrap.style.display = 'block';
+      chartEmpty.style.display = 'none';
+      document.getElementById('trendChart').innerHTML = buildBmiLineChartSVG(data, currentRange);
+    }
   }
 
   function renderAll(){
     renderMonitor();
+    renderBmiMonitor();
     renderSummary();
     renderHistory();
     if(chartOverlay.classList.contains('open')) renderChart();
@@ -1246,27 +1449,35 @@
     try{
       const result = await window.storage.get(STORAGE_KEY, false);
       records = result ? JSON.parse(result.value) : [];
-    }catch(e){
-      records = [];
-    }
+    }catch(e){ records = []; }
+
+    try{
+      const bmiRes = await window.storage.get(BMI_STORAGE_KEY, false);
+      bmiRecords = bmiRes ? JSON.parse(bmiRes.value) : [];
+    }catch(e){ bmiRecords = []; }
+
+    try{
+      const hRes = await window.storage.get(HEIGHT_STORAGE_KEY, false);
+      userHeight = hRes ? parseFloat(hRes.value) : 0;
+      if(userHeight > 0) heightInput.value = userHeight;
+    }catch(e){ userHeight = 0; }
+
     renderAll();
   }
 
   async function saveRecords(){
-    try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(records), false);
-    }catch(e){
-      console.error('儲存失敗', e);
-    }
+    try{ await window.storage.set(STORAGE_KEY, JSON.stringify(records), false); }catch(e){ console.error('儲存失敗', e); }
   }
 
-  function showError(msg){
-    errorMsg.textContent = msg;
-    errorMsg.style.display = 'block';
+  async function saveBmiRecords(){
+    try{ await window.storage.set(BMI_STORAGE_KEY, JSON.stringify(bmiRecords), false); }catch(e){ console.error('BMI 儲存失敗', e); }
   }
-  function clearError(){
-    errorMsg.style.display = 'none';
-  }
+
+  function showError(msg){ errorMsg.textContent = msg; errorMsg.style.display = 'block'; }
+  function clearError(){ errorMsg.style.display = 'none'; }
+
+  function showBmiError(msg){ bmiErrorMsg.textContent = msg; bmiErrorMsg.style.display = 'block'; }
+  function clearBmiError(){ bmiErrorMsg.style.display = 'none'; }
 
   async function deleteRecord(id){
     const target = records.find(r => r.id === id);
@@ -1276,6 +1487,7 @@
     if(target && accessToken && spreadsheetId){ await deleteFromSheet(target); }
   }
 
+  // 新增血壓紀錄事件
   addBtn.addEventListener('click', async ()=>{
     clearError();
     const date = dateInput.value;
@@ -1306,6 +1518,36 @@
     pulseInput.value = '';
     nowDefaults();
     sysInput.focus();
+  });
+
+  // 新增 BMI / 體重紀錄事件
+  addBmiBtn.addEventListener('click', async ()=>{
+    clearBmiError();
+    const h = parseFloat(heightInput.value);
+    const w = parseFloat(weightInput.value);
+    const date = bmiDateInput.value;
+
+    if(!h || h < 50 || h > 250){ showBmiError('請輸入有效的身高 (50~250 cm)'); return; }
+    if(!w || w < 20 || w > 300){ showBmiError('請輸入有效的體重 (20~300 kg)'); return; }
+    if(!date){ showBmiError('請選擇日期'); return; }
+
+    userHeight = h;
+    try{ await window.storage.set(HEIGHT_STORAGE_KEY, String(userHeight), false); }catch(e){}
+
+    const bmi = parseFloat((w / ((h / 100) * (h / 100))).toFixed(1));
+    const record = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      date,
+      weight: w,
+      bmi: bmi,
+      createdAt: new Date().toISOString()
+    };
+
+    bmiRecords.push(record);
+    renderAll();
+    await saveBmiRecords();
+
+    weightInput.value = '';
   });
 
   nowDefaults();
@@ -1368,7 +1610,6 @@
     });
   }
 
-  // Android / 桌機 Chrome、Edge（Windows）：瀏覽器會自動觸發此事件
   window.addEventListener('beforeinstallprompt', async (e)=>{
     e.preventDefault();
     deferredPrompt = e;
@@ -1386,7 +1627,6 @@
     deferredPrompt = null;
   });
 
-  // iOS Safari 沒有 beforeinstallprompt，改用自動彈出的圖文提示
   async function maybeShowIOSBanner(){
     if(!isIOS() || isStandalone()) return;
     if(await wasDismissedRecently()) return;
@@ -1397,7 +1637,6 @@
   }
   window.addEventListener('load', maybeShowIOSBanner);
 
-  // 註冊 Service Worker（PWA 可安裝的必要條件之一）
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
       navigator.serviceWorker.register('service-worker.js').catch(err=>{
